@@ -1,0 +1,62 @@
+---
+BasedOnStyle: LLVM
+ColumnLimit: 100
+
+PointerAlignment: Left
+QualifierAlignment: Right
+ReferenceAlignment: Left
+
+IncludeBlocks: Regroup
+SortIncludes: true
+SortUsingDeclarations: true
+
+AccessModifierOffset: -2
+ConstructorInitializerIndentWidth: 4
+ContinuationIndentWidth: 4
+IndentWidth: 2
+MaxEmptyLinesToKeep: 1
+InsertNewlineAtEOF: true
+UseTab: Never
+
+AlignAfterOpenBracket: Align
+BraceWrapping:
+  AfterClass: false
+AllowShortFunctionsOnASingleLine: true
+AllowShortIfStatementsOnASingleLine: AllIfsAndElse
+SpaceAfterTemplateKeyword: true
+SpaceBeforeAssignmentOperators: true
+SpaceBeforeCpp11BracedList: true
+SpaceBeforeInheritanceColon: true
+SpaceBeforeParens: ControlStatements
+SpacesBeforeTrailingComments: 2
+BreakConstructorInitializers: BeforeComma
+BinPackArguments: false
+BinPackParameters: false
+AllowAllConstructorInitializersOnNextLine: false
+AllowShortBlocksOnASingleLine: Always
+AllowShortCaseLabelsOnASingleLine: true
+AllowShortCompoundRequirementOnASingleLine: true
+BreakBeforeConceptDeclarations: Always
+BreakTemplateDeclarations: Yes
+AlignConsecutiveShortCaseStatements:
+  Enabled: true
+  AcrossEmptyLines: false
+  AcrossComments: true
+  AlignCaseColons: false
+AllowShortLoopsOnASingleLine: true
+AllowShortLambdasOnASingleLine: All
+
+SpaceAfterCStyleCast: true
+PackConstructorInitializers: CurrentLine
+RequiresClausePosition: WithFollowing
+
+PenaltyBreakBeforeFirstCallParameter: 600
+PenaltyBreakComment:                  100
+PenaltyBreakFirstLessLess:            300
+PenaltyBreakOpenParenthesis:          200
+PenaltyBreakScopeResolution:          800
+PenaltyBreakString:                   999
+PenaltyBreakTemplateDeclaration:      700
+PenaltyExcessCharacter:               400
+PenaltyIndentedWhitespace:            700
+PenaltyReturnTypeOnItsOwnLine:        800

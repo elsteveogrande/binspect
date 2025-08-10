@@ -17,7 +17,9 @@ struct alloc_resource final : std::pmr::memory_resource {
     using BA = typename AT::template rebind_alloc<std::byte>;
     auto ba = BA(alloc);
     __alloc_bytes = [ba](size_t sz) mutable { return (std::byte*) ba.allocate(sz); };
-    __dealloc_bytes = [ba](std::byte* ptr, size_t sz) mutable { return ba.deallocate(ptr, sz); };
+    __dealloc_bytes = [ba](std::byte* ptr, size_t sz) mutable {
+      return ba.deallocate(ptr, sz);
+    };
   }
 
   virtual ~alloc_resource() = default;

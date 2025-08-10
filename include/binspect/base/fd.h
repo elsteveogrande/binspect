@@ -1,6 +1,7 @@
 #pragma once
 
-#include <binspect/base/error.h>
+#include "binspect/base/error.h"
+
 #include <cstddef>
 #include <cstring>
 #include <expected>

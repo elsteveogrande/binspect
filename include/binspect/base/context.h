@@ -1,8 +1,9 @@
 #pragma once
 
-#include <binspect/base/error.h>
-#include <binspect/base/memory.h>
-#include <binspect/elf.h>
+#include "binspect/base/error.h"
+#include "binspect/base/memory.h"
+#include "binspect/elf.h"
+
 #include <expected>
 
 namespace binspect {

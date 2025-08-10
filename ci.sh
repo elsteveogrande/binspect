@@ -39,12 +39,3 @@ for OPT in O0 O1 Os Og O3 ; do
     done
   done
 done
-
-# "${BUILD}/test" test/files/elf.64.le.exe
-# "${BUILD}/test" test/files/elf.64.le.so
-
-# "${BUILD}/test" test/files/elf.32.le.exe
-# "${BUILD}/test" test/files/elf.32.le.so
-
-# "${BUILD}/test" test/files/elf.64.be.exe
-# "${BUILD}/test" test/files/elf.32.be.exe

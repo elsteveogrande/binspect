@@ -1,6 +1,7 @@
 #pragma once
 
-#include <binspect/base/view.h>
+#include "binspect/base/view.h"
+
 #include <cstddef>
 #include <cstdint>
 #include <cstring>

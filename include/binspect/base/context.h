@@ -47,7 +47,21 @@ private:
 inline std::expected<binary, error> context::binary_at(void const* ptr) {
   if (ptr) {
     auto* e64le = (elf::elf64le const*) ptr;
-    return binary {*this, [e64le]() { return e64le->sections_view(); }};
+    if (e64le->valid()) {
+      return binary {.cx_ = *this, .sections = [e64le]() { return e64le->sections_view(); }};
+    }
+    auto* e32le = (elf::elf32le const*) ptr;
+    if (e32le->valid()) {
+      return binary {.cx_ = *this, .sections = [e32le]() { return e32le->sections_view(); }};
+    }
+    auto* e64be = (elf::elf64be const*) ptr;
+    if (e64be->valid()) {
+      return binary {.cx_ = *this, .sections = [e64be]() { return e64be->sections_view(); }};
+    }
+    auto* e32be = (elf::elf32be const*) ptr;
+    if (e32be->valid()) {
+      return binary {.cx_ = *this, .sections = [e32be]() { return e32be->sections_view(); }};
+    }
   }
   return {std::unexpected {error {}}};
 }

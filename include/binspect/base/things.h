@@ -37,11 +37,7 @@ struct section final {
 
 struct binary final {
   context& cx_;
-  std::function<view<section>()> sections;
-
-  binary(context& cx, std::function<view<section>()> sections)
-      : cx_(cx)
-      , sections(std::move(sections)) {}
+  std::function<view<section>()> sections {};
 
   friend std::ostream& operator<<(std::ostream& os, binary const& self) {
     return os << "(binary"

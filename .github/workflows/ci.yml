@@ -1,0 +1,18 @@
+name: CI
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+    - name: llvm20
+      run: sudo apt-get install -y lsb-release wget software-properties-common gnupg && wget -O /tmp/llvm.sh https://apt.llvm.org/llvm.sh && chmod +x /tmp/llvm.sh && sudo /tmp/llvm.sh 20 all
+    - name: checkout
+      uses: actions/checkout@v4
+    - name: tests
+      run: CLANG=/usr/bin/clang++-20 ./ci.sh

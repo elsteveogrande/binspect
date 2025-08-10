@@ -1,6 +1,6 @@
 #pragma once
 
-#include "binspect/base/fd.h"
+#include "binspect/fd.h"
 
 #include <cassert>
 #include <expected>

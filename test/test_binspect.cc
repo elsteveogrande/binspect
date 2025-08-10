@@ -1,4 +1,7 @@
-#include "binspect/binspect.h"
+#include "binspect/context.h"
+#include "binspect/fd.h"
+#include "binspect/memory.h"
+#include "binspect/mmap.h"
 
 #include <cassert>
 #include <iostream>

@@ -1,8 +1,9 @@
 #pragma once
 
-#include "binspect/base/error.h"
-#include "binspect/base/memory.h"
-#include "binspect/elf.h"
+#include "binspect/elf/elf32.h"
+#include "binspect/elf/elf64.h"
+#include "binspect/error.h"
+#include "binspect/memory.h"
 
 #include <expected>
 

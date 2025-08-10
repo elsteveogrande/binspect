@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# Run `./ci.sh` from within project root dir
+# Run `./ci` from within project root dir
 
 CLANG=${CLANG:-clang++}
 

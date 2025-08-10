@@ -1,16 +1,8 @@
 #pragma once
 
-#include <any>
 #include <cassert>
-#include <cstddef>
-#include <cstring>
-#include <fcntl.h>
 #include <functional>
 #include <ranges>
-#include <sys/mman.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <unistd.h>
 
 namespace binspect {
 
@@ -44,7 +36,7 @@ struct view : std::ranges::view_interface<view<T>> {
     assert (false && "cannot support iteration");
   }
 };
-static_assert(std::semiregular<view</* dummy T */ std::any>>);
+static_assert(std::semiregular<view</* dummy T */ int>>);
 // clang-format on
 
 }  // namespace binspect

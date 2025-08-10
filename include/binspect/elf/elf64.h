@@ -1,7 +1,7 @@
 #pragma once
 
-#include "binspect/base/words.h"
 #include "binspect/elf/base.h"
+#include "binspect/words.h"
 
 namespace binspect {
 namespace elf {

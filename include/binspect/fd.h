@@ -1,18 +1,11 @@
 #pragma once
 
-#include "binspect/base/error.h"
+#include "binspect/error.h"
 
 #include <cstddef>
-#include <cstring>
 #include <expected>
 #include <fcntl.h>
-#include <memory>
-#include <string_view>
-#include <sys/mman.h>
-#include <sys/stat.h>
-#include <sys/types.h>
 #include <unistd.h>
-#include <utility>
 
 namespace binspect {
 

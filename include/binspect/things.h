@@ -1,17 +1,9 @@
 #pragma once
 
-#include "binspect/base/view.h"
+#include "binspect/view.h"
 
-#include <cstddef>
-#include <cstdint>
-#include <cstring>
-#include <fcntl.h>
 #include <ostream>
 #include <string_view>
-#include <sys/mman.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <unistd.h>
 
 namespace binspect {
 

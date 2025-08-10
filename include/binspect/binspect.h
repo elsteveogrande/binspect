@@ -1,5 +1,0 @@
-#pragma once
-
-#include "binspect/_config.h"
-#include "binspect/base.h"
-#include "binspect/elf.h"

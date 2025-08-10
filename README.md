@@ -1,3 +1,5 @@
+[![CI](https://github.com/elsteveogrande/binspect/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/elsteveogrande/binspect/actions/workflows/ci.yml)
+
 # binspect
 
 ## Binary Inspector

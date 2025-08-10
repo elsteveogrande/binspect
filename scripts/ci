@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+
+if [[ ! -d include ]] ; then
+  echo "chdir to project root, then run as: scripts/ci"
+  exit 1
+fi
+
+export CLANG=${CLANG:-clang++}
+export TESTCC=test/test_binspect.cc
+export BUILD=build
+
+set -xeuo pipefail
+
+rm -rf build
+mkdir build
+
+for OPT in O0 O1 Os Og O3 ; do
+  export OPT
+  for SAN in undefined address thread ; do
+    export SAN
+    for FEAT in "" "-no-exceptions" "-fno-rtti" ; do
+      export FEAT
+
+      export PROG="${BUILD}/test_${OPT}_${SAN}${FEAT}"
+      rm -f "${PROG}"
+      scripts/t
+      "${CLANG}"                      \
+        @compile_flags.txt            \
+        $FEAT                         \
+        -g                            \
+        "-${OPT}"                     \
+        -o "${PROG}"                  \
+        -fsanitize="${SAN}"           \
+        -UNDEBUG                      \
+        "${TESTCC}"
+
+      for FORMAT in elf ; do
+        for BITS in 64 32 ; do
+          for ENDIAN in le be ; do
+            for TYPE in exe so ; do
+              # Don't currently have big-endian shared libs
+              if [[ "${FORMAT}-${ENDIAN}-${TYPE}" == "elf-be-so" ]]; then continue; fi
+              BINFILE="test/files/${FORMAT}.${BITS}.${ENDIAN}.${TYPE}"
+              "${PROG}" "${BINFILE}"
+            done
+          done
+        done
+      done
+    done
+  done
+done

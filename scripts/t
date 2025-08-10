@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+
+if [[ ! -d include ]] ; then
+  echo "chdir to project root, then run as: scripts/t"
+  exit 1
+fi
+
+CLANG=${CLANG:-clang++}
+TESTCC=test/test_binspect.cc
+BUILD=build
+OPT=${OPT:-Og}
+SAN=${SAN:-address}
+PROG=${PROG:-$BUILD/test}
+
+set -xeuo pipefail
+
+mkdir -p build
+
+"${CLANG}"                      \
+  @compile_flags.txt            \
+  -g                            \
+  "-${OPT}"                     \
+  -o "${PROG}"                  \
+  -fsanitize="${SAN}"           \
+  -UNDEBUG                      \
+  "${TESTCC}"
+
+build/test build/test

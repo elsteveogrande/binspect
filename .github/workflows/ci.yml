@@ -15,4 +15,4 @@ jobs:
     - name: checkout
       uses: actions/checkout@v4
     - name: tests
-      run: CLANG=/usr/bin/clang++-20 ./ci
+      run: CLANG=/usr/bin/clang++-20 ./scripts/ci

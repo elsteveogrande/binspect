@@ -10,18 +10,12 @@ set -xeuo pipefail
 rm -rf build
 mkdir build
 
-clang++               \
-  @compile_flags.txt  \
-  -Og -g              \
-  -o "${BUILD}/test"  \
-  "${TESTCC}"
-
-"${BUILD}/test" test/files/elf.64.le.exe
-
-g++                   \
-  @compile_flags.txt  \
-  -Og -g              \
-  -o "${BUILD}/test"  \
+clang++                         \
+  @compile_flags.txt            \
+  -O0 -g                        \
+  -o "${BUILD}/test"            \
+  -fsanitize=address,undefined  \
+  -UNDEBUG                      \
   "${TESTCC}"
 
 "${BUILD}/test" test/files/elf.64.le.exe

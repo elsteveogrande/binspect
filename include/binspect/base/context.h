@@ -1,12 +1,13 @@
 #pragma once
 
-#include <binspect/base.h>
 #include <binspect/base/error.h>
 #include <binspect/base/memory.h>
 #include <binspect/elf.h>
 #include <expected>
 
 namespace binspect {
+
+struct context;
 
 struct context {
   heap& heap_;
@@ -34,7 +35,7 @@ struct context {
     return *ret;
   }
 
-  std::expected<binary_ref, error> binary_at(void const* ptr);
+  std::expected<binary, error> binary_at(void const* ptr);
 
 private:
   static context*& thread_cx() {
@@ -43,11 +44,10 @@ private:
   }
 };
 
-inline std::expected<binary_ref, error> context::binary_at(void const* ptr) {
+inline std::expected<binary, error> context::binary_at(void const* ptr) {
   if (ptr) {
     auto* e64le = (elf::elf64le const*) ptr;
-    return {std::make_shared<binary>(
-        [e64le]() { return e64le->sections(); }, [e64le]() { return e64le->symbols(); })};
+    return binary {*this, [e64le]() { return e64le->sections_view(); }};
   }
   return {std::unexpected {error {}}};
 }

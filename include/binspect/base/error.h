@@ -5,7 +5,7 @@
 namespace binspect {
 
 struct error {
-  int errno_;
+  int errno_ {-1};
   friend std::ostream& operator<<(std::ostream& os, error const& e) {
 #if defined(__cpp_rtti)
     os << typeid(e).name() << ": ";

@@ -3,6 +3,7 @@
 #include "binspect/error.h"
 
 #include <cstddef>
+#include <cstring>
 #include <expected>
 #include <fcntl.h>
 #include <unistd.h>

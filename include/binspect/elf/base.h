@@ -2,6 +2,8 @@
 
 #include "binspect/things.h"
 
+#include <cstring>
+
 namespace binspect {
 namespace elf {
 

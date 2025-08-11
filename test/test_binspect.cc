@@ -9,13 +9,11 @@
 #include <utility>
 
 namespace {
-template <typename T>
-struct test_alloc : std::allocator<T> {
+template <typename T> struct test_alloc : std::allocator<T> {
   T* allocate(size_t count) { return ::new T[count]; }
   void deallocate(T* ptr, size_t count) { ::operator delete[](ptr, count); }
 
-  template <typename U>
-  struct rebind {
+  template <typename U> struct rebind {
     using other = test_alloc<U>;
   };
 };

@@ -9,11 +9,8 @@
 
 namespace binspect {
 
-struct context;
-
 struct context {
   heap& heap_;
-  bump bump_;
 
   context(context const&) = delete;
   context(context&&) = delete;
@@ -25,7 +22,7 @@ struct context {
     thread_cx() = nullptr;
   }
 
-  explicit context(heap& heap) : heap_(heap), bump_(heap_.heap_) {
+  explicit context(heap& heap) : heap_(heap) {
     assert(!thread_cx());
     thread_cx() = this;
   }

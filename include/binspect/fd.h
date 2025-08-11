@@ -25,10 +25,8 @@ struct fd {
   operator int() const { return fd_; }
 
   fd(fd&& rhs) {
-    fd_ = rhs.fd_;
-    size_ = rhs.size_;
-    rhs.fd_ = -1;
-    rhs.size_ = -1;
+    std::swap(fd_, rhs.fd_);
+    std::swap(size_, rhs.size_);
   }
 
   fd& operator=(fd&& rhs) {
@@ -36,9 +34,10 @@ struct fd {
   }
 
   ~fd() {
-    int fd {-1};
-    std::swap(fd, fd_);
-    if (fd > 0) { ::close(fd); }
+    if (fd_ > 0) {
+      ::close(fd_);
+      fd_ = -1;
+    }
   }
 
   std::expected<size_t, error> size() const {
@@ -48,10 +47,10 @@ struct fd {
 
   static std::expected<fd, error> open(std::string_view path) {
     auto fileno = c::open(path);
-    if (!fileno.has_value()) { return std::unexpected {fileno.error()}; }
-    auto size = c::lseek(fileno.value(), 0, SEEK_END);
-    if (!size.has_value()) { return std::unexpected {size.error()}; }
-    return fd {fileno.value(), size.value()};
+    if (!fileno) { return std::unexpected {fileno.error()}; }
+    auto size = c::lseek(*fileno, 0, SEEK_END);
+    if (!size) { return std::unexpected {size.error()}; }
+    return fd {fileno.value(), *size};
   }
 };
 

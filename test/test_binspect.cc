@@ -20,8 +20,7 @@ struct test_alloc : std::allocator<T> {
     if (allocs_ || deallocs_) {
       std::cerr
           << std::format(
-                 "test_alloc: allocs: {} ({} bytes) deallocs: {} ({} bytes); peak {} "
-                 "bytes",
+                 "allocs: {} ({} bytes) deallocs: {} ({} bytes); peak {} bytes",
                  allocs_,
                  alloc_total_,
                  deallocs_,

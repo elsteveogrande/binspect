@@ -44,7 +44,7 @@ struct alloc_resource final : std::pmr::memory_resource {
 
   struct token final {
     uint32_t padding_;
-    uint32_t orig_size_;
+    uint32_t requested_;
 
     static token* after(void* obj, size_t bytes) {
       auto space = sizeof(padding_);
@@ -57,21 +57,23 @@ struct alloc_resource final : std::pmr::memory_resource {
   static_assert(alignof(token) == 4);
 
   void* do_allocate(size_t bytes, size_t align) override {
-    assert(align < (1 << 20));                          // reject nonsense
-    auto total = bytes + align + sizeof(uint32_t) - 1;  // bytes needed, worst-case
-    auto* ret = __alloc_bytes(total);                   // acquire bytes, incl. overhead
-    auto* orig = ret;                                   // remember orig pointer
-    std::align(align, bytes, (void*&) ret, total);      // align ret with padding
-    auto* tok = token::after(ret, bytes);               // word goes just after obj
-    tok->padding_ = uint32_t(ret - orig);               // indicate amount of padding
-    tok->orig_size_ = uint32_t(total);                  // original size, for dealloc call
+    assert(bytes < (1 << 20));                            // reject nonsense
+    assert(align < (1 << 16));                            // reject nonsense
+    auto request = bytes + align + sizeof(uint32_t) - 1;  // bytes needed, worst-case
+    auto* ret = __alloc_bytes(request);                   // acquire bytes, incl. overhead
+    auto* orig = ret;                                     // remember orig pointer
+    auto total = request;                                 // total size of allocation
+    std::align(align, bytes, (void*&) ret, total);        // align ret with padding
+    auto* tok = token::after(ret, bytes);                 // word goes just after obj
+    tok->padding_ = uint32_t(ret - orig);                 // indicate amount of padding
+    tok->requested_ = uint32_t(request);                  // needed for dealloc call
     return (void*) ret;
   }
 
   void do_deallocate(void* obj, size_t bytes, size_t /* align ignored */) override {
     auto* tok = token::after(obj, bytes);                // word is just after obj
     auto* ptr = (std::byte*) obj - tok->padding_;        // back up past padding bytes
-    __dealloc_bytes((std::byte*) ptr, tok->orig_size_);  // orig (ptr, size) from allocate
+    __dealloc_bytes((std::byte*) ptr, tok->requested_);  // orig (ptr, size) from allocate
   }
 };
 

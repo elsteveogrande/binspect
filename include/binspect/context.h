@@ -14,7 +14,6 @@ struct context;
 struct context {
   heap& heap_;
   bump bump_;
-  // cache_sp cache_sp_{}; // optional
 
   context(context const&) = delete;
   context(context&&) = delete;

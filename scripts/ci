@@ -18,12 +18,11 @@ for OPT in O0 O1 Os Og O3 ; do
   export OPT
   for SAN in undefined address thread ; do
     export SAN
-    for FEAT in "" "-no-exceptions" "-fno-rtti" ; do
+    for FEAT in "" "-fno-exceptions" "-fno-rtti" ; do
       export FEAT
 
-      export PROG="${BUILD}/test_${OPT}_${SAN}${FEAT}"
+      export PROG="${BUILD}/test"
       rm -f "${PROG}"
-      scripts/t
       "${CLANG}"                      \
         @compile_flags.txt            \
         $FEAT                         \

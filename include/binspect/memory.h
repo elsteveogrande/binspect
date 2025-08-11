@@ -7,12 +7,17 @@
 
 namespace binspect {
 
-struct alloc_resource final : std::pmr::memory_resource {
+/*
+Our version of the experimental `resource_adaptor` (some stuff omitted for brevity):
+https://en.cppreference.com/w/cpp/experimental/resource_adaptor.html
+*/
+
+struct resource_adaptor final : std::pmr::memory_resource {
   std::function<std::byte*(size_t)> __alloc_bytes;
   std::function<void(std::byte*, size_t)> __dealloc_bytes;
 
   template <class A>
-  explicit alloc_resource(A const& alloc) {
+  explicit resource_adaptor(A const& alloc) {
     using AT = typename std::allocator_traits<A>;
     using BA = typename AT::template rebind_alloc<std::byte>;
     auto ba = BA(alloc);
@@ -22,20 +27,20 @@ struct alloc_resource final : std::pmr::memory_resource {
     };
   }
 
-  virtual ~alloc_resource() = default;
+  virtual ~resource_adaptor() = default;
 
-  virtual bool do_is_equal(std::pmr::memory_resource const& rhs) const noexcept {
+  bool do_is_equal(std::pmr::memory_resource const& rhs) const noexcept override {
     return std::addressof(rhs) == this;
   }
 
-  virtual void* do_allocate(size_t bytes, size_t align) {
+  void* do_allocate(size_t bytes, size_t align) override {
     auto* ret = (std::byte*) __alloc_bytes(bytes);
     auto addr = uintptr_t(ret);
     assert(!(addr % align));  ////////////////////////////// FIXME
     return ret;
   }
 
-  virtual void do_deallocate(void* ptr, size_t bytes, size_t) {
+  void do_deallocate(void* ptr, size_t bytes, size_t) override {
     __dealloc_bytes((std::byte*) ptr, bytes);
   }
 };
@@ -43,6 +48,8 @@ struct alloc_resource final : std::pmr::memory_resource {
 struct heap {
   std::pmr::memory_resource* rs_;
   std::pmr::unsynchronized_pool_resource heap_;
+
+  heap() : heap(*std::pmr::new_delete_resource()) {}
   explicit heap(std::pmr::memory_resource& rs) : rs_(&rs), heap_(rs_) {}
 };
 

@@ -59,13 +59,13 @@ inline std::expected<int, error> open(std::string_view path) {
   char path_buf[PATH_MAX + 1] {0};
   strncpy(path_buf, path.data(), sizeof(path_buf));
   int ret = ::open(path_buf, O_RDONLY);
-  if (ret == -1) { return std::unexpected<error> {{errno}}; }
+  if (ret == -1) { return std::unexpected<error> {error {}}; }
   return ret;
 }
 
 inline std::expected<off_t, error> lseek(int fileno, off_t offset, int whence) {
   auto ret = ::lseek(fileno, offset, whence);
-  if (ret == -1) { return std::unexpected<error> {{errno}}; }
+  if (ret == -1) { return std::unexpected<error> {error {}}; }
   return ret;
 }
 

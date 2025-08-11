@@ -6,14 +6,48 @@
 #include <cassert>
 #include <iostream>
 #include <string_view>
-#include <utility>
+
+size_t allocs_ {};
+size_t deallocs_ {};
+size_t alloc_total_ {};
+size_t dealloc_total_ {};
+size_t peak_ {};
 
 namespace {
-template <typename T> struct test_alloc : std::allocator<T> {
-  T* allocate(size_t count) { return ::new T[count]; }
-  void deallocate(T* ptr, size_t count) { ::operator delete[](ptr, count); }
+template <typename T>
+struct test_alloc : std::allocator<T> {
+  ~test_alloc() {
+    if (allocs_ || deallocs_) {
+      std::cerr
+          << std::format(
+                 "test_alloc: allocs: {} ({} bytes) deallocs: {} ({} bytes); peak {} "
+                 "bytes",
+                 allocs_,
+                 alloc_total_,
+                 deallocs_,
+                 dealloc_total_,
+                 peak_)
+          << '\n';
+    }
+    assert(allocs_ == deallocs_);
+    assert(alloc_total_ == dealloc_total_);
+  }
 
-  template <typename U> struct rebind {
+  T* allocate(size_t count) {
+    ++allocs_;
+    alloc_total_ += count;
+    peak_ = std::max(peak_, alloc_total_ - dealloc_total_);
+    return ::new T[count];
+  }
+
+  void deallocate(T* ptr, size_t count) {
+    ++deallocs_;
+    dealloc_total_ += count;
+    ::operator delete[](ptr, count);
+  }
+
+  template <typename U>
+  struct rebind {
     using other = test_alloc<U>;
   };
 };
@@ -28,15 +62,16 @@ int main(int argc, char** argv) {
   binspect::heap heap {resource};
   binspect::context cx {heap};
 
-  auto fd = binspect::fd::open(path);
-  assert(fd);
-  auto mm = binspect::mmap::map_file(std::move(*fd));
+  auto mm = binspect::fd::open(path).and_then(binspect::mmap::map_file);
   assert(mm);
   auto bin = cx.binary_at(mm->addr_);
   assert(bin);
 
   std::cout << *bin << '\n';
-  for (auto section : bin->sections()) { std::cout << "... " << section << '\n'; }
+  for (auto section : bin->sections()) {
+    // std::cout << "... " << section << '\n';
+    (void) section;
+  }
 
   return 0;
 }

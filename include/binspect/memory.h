@@ -1,6 +1,10 @@
 #pragma once
 
+#include "binspect/error.h"
+
 #include <cassert>
+#include <cstddef>
+#include <expected>
 #include <functional>
 #include <memory>
 #include <memory_resource>
@@ -11,8 +15,10 @@ namespace binspect {
  * Our version of the experimental `resource_adaptor` (some stuff omitted for brevity):
  * https://en.cppreference.com/w/cpp/experimental/resource_adaptor.html
  *
- * tl;dr: accepts an allocator, recasts to byte allocator, and wraps in
- * pmr::memory_resource.
+ * tl;dr: accepts an allocator, recasts as byte allocator, wraps in pmr::memory_resource.
+ * Mostly this is just redirecting `do_allocate` to allocator's `allocate`, and so on,
+ * with a bit of extra work to make sure alignment (which is supported by memory_resource
+ * but not by allocator) is observed.
  */
 struct alloc_resource final : std::pmr::memory_resource {
   std::function<std::byte*(size_t)> __alloc_bytes;
@@ -36,33 +42,95 @@ struct alloc_resource final : std::pmr::memory_resource {
     return std::addressof(rhs) == this;
   }
 
+  struct token final {
+    uint32_t padding_;
+    uint32_t orig_size_;
+
+    static token* after(void* obj, size_t bytes) {
+      auto space = sizeof(padding_);
+      auto* ret = (std::byte*) obj + bytes;
+      std::align(alignof(uint32_t), bytes, (void*&) ret, space);
+      return (token*) ret;
+    }
+  };
+  static_assert(sizeof(token) == 8);
+  static_assert(alignof(token) == 4);
+
   void* do_allocate(size_t bytes, size_t align) override {
-    auto* ret = (std::byte*) __alloc_bytes(bytes);
-    auto addr = uintptr_t(ret);
-    assert(!(addr % align));  ////////////////////////////// FIXME
-    return ret;
+    assert(align < (1 << 20));                          // reject nonsense
+    auto total = bytes + align + sizeof(uint32_t) - 1;  // bytes needed, worst-case
+    auto* ret = __alloc_bytes(total);                   // acquire bytes, incl. overhead
+    auto* orig = ret;                                   // remember orig pointer
+    std::align(align, bytes, (void*&) ret, total);      // align ret with padding
+    auto* tok = token::after(ret, bytes);               // word goes just after obj
+    tok->padding_ = uint32_t(ret - orig);               // indicate amount of padding
+    tok->orig_size_ = uint32_t(total);                  // original size, for dealloc call
+    return (void*) ret;
   }
 
-  void do_deallocate(void* ptr, size_t bytes, size_t) override {
-    __dealloc_bytes((std::byte*) ptr, bytes);
+  void do_deallocate(void* obj, size_t bytes, size_t /* align ignored */) override {
+    auto* tok = token::after(obj, bytes);                // word is just after obj
+    auto* ptr = (std::byte*) obj - tok->padding_;        // back up past padding bytes
+    __dealloc_bytes((std::byte*) ptr, tok->orig_size_);  // orig (ptr, size) from allocate
   }
 };
 
 /**
- * The "heap" is a scope-private memory resource is what we generally allocate everything
- * onto (except temporaries).  It will be the storage for anything returned by the
- * binspect API, so it should outlive the binspect context it's given to.
+ * The "heap" is a scoped memory resource and is what we generally allocate everything
+ * onto, except data we know are temporary (which we'll use `bump` for).  It will be the
+ * storage for anything returned by the binspect API, so it should outlive the binspect
+ * context it's given to.
  *
  * It should be in use for only one context at a time.  This class is not thread-safe.
  */
-struct heap {
-  std::pmr::memory_resource& rs_;
-  std::pmr::unsynchronized_pool_resource heap_;
+struct heap : std::pmr::unsynchronized_pool_resource {
+  using base = std::pmr::unsynchronized_pool_resource;
 
-  /** Build a heap, using plain old new/delete as upstream memory resource. */
-  heap() : heap(*std::pmr::new_delete_resource()) {}
+  virtual ~heap() = default;
+
   /** Build a heap using a provided upstream resource. */
-  explicit heap(std::pmr::memory_resource& rs) : rs_(rs), heap_(&rs_) {}
+  explicit heap(std::pmr::memory_resource& rs) : base(&rs) {}
+
+  template <typename T>
+  std::pmr::polymorphic_allocator<T> alloc() {
+    return {this};
+  }
+};
+
+template <class T>
+struct ref : private std::expected<std::shared_ptr<T>, error> {
+  using SP = std::shared_ptr<T>;
+  using X = std::expected<SP, error>;
+
+  /** Truthy IFF this is not empty, and not error. */
+  operator bool() const { return this->has_value() && this->value().get(); }
+
+  static void __throw(error const& err) {
+#if defined(__cpp_exceptions) && __cpp_exceptions >= 199711L
+    throw err;
+#else
+    std::cerr << err << '\n';
+    abort();
+#endif
+  }
+
+  /** Return pointer to value if present, else throw error */
+  T* operator->(this auto& self) { return &*self; }
+
+  /** Return reference to value if present, else throw error */
+  T& operator*(this auto& self) {
+    if (!self.has_value()) { __throw(self.error()); }
+    if (!self.value().get()) { __throw(error(-1)); }
+    return *self.value().get();
+  }
+
+  ref() {}
+  ref(SP sp) : X(std::move(sp)) {}
+  ref(error err) : X(std::unexpected {std::move(err)}) {}
+
+  template <class... A>
+  explicit ref(heap& heap, A&&... args)
+      : ref {std::allocate_shared<T>(heap.alloc<T>(), std::forward<A>(args)...)} {}
 };
 
 }  // namespace binspect

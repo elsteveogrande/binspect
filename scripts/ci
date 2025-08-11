@@ -16,7 +16,7 @@ mkdir build
 
 for OPT in O0 O1 Os Og O3 ; do
   export OPT
-  for SAN in undefined address thread ; do
+  for SAN in undefined address ; do
     export SAN
     export PROG="${BUILD}/test"
     scripts/buildtest

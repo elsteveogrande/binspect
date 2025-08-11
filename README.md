@@ -70,3 +70,16 @@ a [memory resource](https://en.cppreference.com/w/cpp/memory/memory_resource.htm
 You can provide such a memory resource as well; this `alloc_resource` class is a simple
 adapter from the more-commonly-used "allocator-style" types to the type used
 by `std::pmr`.
+
+
+## TODO
+
+* ELF symbols
+* Find companion debug info files (.dwo, .dSYM)
+* Delegate calls for binary->{symbols, sections} to companions
+* Mach-O segments
+* Mach-O sections
+* Mach-O symbols
+* Collect all debug sections, in binary + companions (.debug_line, .dwo_debug_line, ...)
+
+

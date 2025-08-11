@@ -8,8 +8,8 @@ fi
 set -xeuo pipefail
 
 # Quick, basic test
-scripts/buildtest
-build/test build/test
+SAN=address OPT=O0 scripts/buildtest
+build/test test/files/elf.64.le.exe
 
 # Automated cleanups + checks
 find include/ test/ -type f -name \*.h -o -name \*\.cc \

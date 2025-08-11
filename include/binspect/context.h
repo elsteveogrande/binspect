@@ -5,8 +5,6 @@
 #include "binspect/error.h"
 #include "binspect/memory.h"
 
-#include <expected>
-
 namespace binspect {
 
 struct context {
@@ -33,7 +31,7 @@ struct context {
     return *ret;
   }
 
-  std::expected<binary, error> binary_at(void const* ptr);
+  ref<binary> binary_at(void const* ptr);
 
 private:
   static context*& thread_cx() {
@@ -42,26 +40,26 @@ private:
   }
 };
 
-inline std::expected<binary, error> context::binary_at(void const* ptr) {
+inline ref<binary> context::binary_at(void const* ptr) {
   if (ptr) {
     auto* e64le = (elf::elf64le const*) ptr;
     if (e64le->valid()) {
-      return binary {.cx_ = *this, .sections = [e64le]() { return e64le->sections_view(); }};
+      return ref<binary>(heap_, *this, [e64le]() { return e64le->sections_view(); });
     }
     auto* e32le = (elf::elf32le const*) ptr;
     if (e32le->valid()) {
-      return binary {.cx_ = *this, .sections = [e32le]() { return e32le->sections_view(); }};
+      return ref<binary>(heap_, *this, [e32le]() { return e32le->sections_view(); });
     }
     auto* e64be = (elf::elf64be const*) ptr;
     if (e64be->valid()) {
-      return binary {.cx_ = *this, .sections = [e64be]() { return e64be->sections_view(); }};
+      return ref<binary>(heap_, *this, [e64be]() { return e64be->sections_view(); });
     }
     auto* e32be = (elf::elf32be const*) ptr;
     if (e32be->valid()) {
-      return binary {.cx_ = *this, .sections = [e32be]() { return e32be->sections_view(); }};
+      return ref<binary>(heap_, *this, [e32be]() { return e32be->sections_view(); });
     }
   }
-  return {std::unexpected {error {}}};
+  return {error(-1)};
 }
 
 }  // namespace binspect

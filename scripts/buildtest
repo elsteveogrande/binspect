@@ -5,7 +5,7 @@ if [[ ! -d include ]] ; then
   exit 1
 fi
 
-CLANG=${CLANG:-clang++}
+CC=${CC:-clang++}
 TESTCC=test/test_binspect.cc
 BUILD=build
 OPT=${OPT:-Og}
@@ -16,7 +16,7 @@ set -xeuo pipefail
 
 mkdir -p build
 
-"${CLANG}"                      \
+"${CC}"                         \
   @compile_flags.txt            \
   -g                            \
   "-${OPT}"                     \

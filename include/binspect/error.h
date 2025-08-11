@@ -11,7 +11,6 @@ struct error {
 #if defined(__cpp_rtti) && __cpp_rtti >= 199711L
     os << typeid(e).name();
 #else
-
     os << "error";
 #endif
     os << ": [" << e.errno_ << "]" << ' ' << strerror(e.errno_);

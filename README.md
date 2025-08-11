@@ -61,9 +61,8 @@ The allocator you provide can be any type that provides `allocate` and `dealloca
 returning or accepting `std::byte*` pointers.
 
 ```
-// T = std::byte
-T* allocate(std::size_t n);
-void deallocate(T* p, std::size_t n);
+std::byte* allocate(size_t n);
+void deallocate(std::byte* p, size_t n);
 ```
 
 This object is then wrapped in a `binspect::alloc_resource`, making it
@@ -71,6 +70,3 @@ a [memory resource](https://en.cppreference.com/w/cpp/memory/memory_resource.htm
 You can provide such a memory resource as well; this `alloc_resource` class is a simple
 adapter from the more-commonly-used "allocator-style" types to the type used
 by `std::pmr`.
-
-What's `heap`?  It's a class wrapped around 
-

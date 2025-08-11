@@ -18,30 +18,17 @@ for OPT in O0 O1 Os Og O3 ; do
   export OPT
   for SAN in undefined address thread ; do
     export SAN
-    for FEAT in "" "-fno-exceptions" "-fno-rtti" ; do
-      export FEAT
+    export PROG="${BUILD}/test"
+    scripts/buildtest
 
-      export PROG="${BUILD}/test"
-      rm -f "${PROG}"
-      "${CLANG}"                      \
-        @compile_flags.txt            \
-        $FEAT                         \
-        -g                            \
-        "-${OPT}"                     \
-        -o "${PROG}"                  \
-        -fsanitize="${SAN}"           \
-        -UNDEBUG                      \
-        "${TESTCC}"
-
-      for FORMAT in elf ; do
-        for BITS in 64 32 ; do
-          for ENDIAN in le be ; do
-            for TYPE in exe so ; do
-              # Don't currently have big-endian shared libs
-              if [[ "${FORMAT}-${ENDIAN}-${TYPE}" == "elf-be-so" ]]; then continue; fi
-              BINFILE="test/files/${FORMAT}.${BITS}.${ENDIAN}.${TYPE}"
-              "${PROG}" "${BINFILE}"
-            done
+    for FORMAT in elf ; do
+      for BITS in 64 32 ; do
+        for ENDIAN in le be ; do
+          for TYPE in exe so ; do
+            # Don't currently have big-endian shared libs
+            if [[ "${FORMAT}-${ENDIAN}-${TYPE}" == "elf-be-so" ]]; then continue; fi
+            BINFILE="test/files/${FORMAT}.${BITS}.${ENDIAN}.${TYPE}"
+            "${PROG}" "${BINFILE}"
           done
         done
       done

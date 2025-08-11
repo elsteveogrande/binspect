@@ -8,11 +8,26 @@
 #include <string_view>
 #include <utility>
 
+namespace {
+template <typename T>
+struct test_alloc : std::allocator<T> {
+  T* allocate(size_t count) { return ::new T[count]; }
+  void deallocate(T* ptr, size_t count) { ::operator delete[](ptr, count); }
+
+  template <typename U>
+  struct rebind {
+    using other = test_alloc<U>;
+  };
+};
+}  // namespace
+
 int main(int argc, char** argv) {
   assert(argc == 2);
   std::string_view path {argv[1]};
 
-  binspect::heap heap;
+  test_alloc<std::byte> alloc;
+  binspect::alloc_resource resource {alloc};
+  binspect::heap heap {resource};
   binspect::context cx {heap};
 
   auto fd = binspect::fd::open(path);

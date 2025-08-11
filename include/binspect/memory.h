@@ -12,12 +12,12 @@ Our version of the experimental `resource_adaptor` (some stuff omitted for brevi
 https://en.cppreference.com/w/cpp/experimental/resource_adaptor.html
 */
 
-struct resource_adaptor final : std::pmr::memory_resource {
+struct alloc_resource final : std::pmr::memory_resource {
   std::function<std::byte*(size_t)> __alloc_bytes;
   std::function<void(std::byte*, size_t)> __dealloc_bytes;
 
   template <class A>
-  explicit resource_adaptor(A const& alloc) {
+  explicit alloc_resource(A const& alloc) {
     using AT = typename std::allocator_traits<A>;
     using BA = typename AT::template rebind_alloc<std::byte>;
     auto ba = BA(alloc);
@@ -27,7 +27,7 @@ struct resource_adaptor final : std::pmr::memory_resource {
     };
   }
 
-  virtual ~resource_adaptor() = default;
+  virtual ~alloc_resource() = default;
 
   bool do_is_equal(std::pmr::memory_resource const& rhs) const noexcept override {
     return std::addressof(rhs) == this;

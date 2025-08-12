@@ -4,7 +4,7 @@
 
 ## Binary Inspector
 
-A library for navigating executable formats.
+A library for reading executable binary formats.
 
 * Executable programs as well as shared libraries
 * ELF (64/32, and LE/BE) formats
@@ -57,8 +57,8 @@ All its allocations will ultimately go through the allocator object you pass to
 the `context` constructor.  If you don't care about this, and the standard allocation
 functions are okay to use in your situation, just use `std::allocator<std::byte>`.
 
-The allocator you provide can be any type that provides `allocate` and `deallocate`
-returning or accepting `std::byte*` pointers.
+The allocator you provide can be any type that provides `allocate` and `deallocate` functions
+having the expected signatures:
 
 ```
 std::byte* allocate(size_t n);
@@ -75,6 +75,7 @@ by `std::pmr`.
 ## TODO
 
 * ELF symbols
+* Optional cache
 * Find companion debug info files (.dwo, .dSYM)
 * Delegate calls for binary->{symbols, sections} to companions
 * Mach-O segments

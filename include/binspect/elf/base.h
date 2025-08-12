@@ -47,6 +47,11 @@ struct __elf_base {
         .content_end = self.ptr(shdr->offset, shdr->size),
     };
   }
+
+  view<symbol> symbols_view(this E const& self) {
+    (void) self;
+    return {};
+  }
 };
 
 }  // namespace elf

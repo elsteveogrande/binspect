@@ -2,7 +2,9 @@
 
 #include "binspect/view.h"
 
+#include <format>
 #include <ostream>
+#include <print>
 #include <string_view>
 
 namespace binspect {
@@ -16,25 +18,33 @@ struct section final {
   std::byte const* content_end;
 
   friend std::ostream& operator<<(std::ostream& os, section const& self) {
-    return os << "(section"
-              << " vm_addr:" << ((void*) self.vm_addr) << " name:" << self.name
-              << " size:" << (self.content_end - self.content) << ")";
+    std::print(
+        os,
+        "(section vm_addr:0x{:012x} size:{} name:{})",
+        self.vm_addr,
+        (self.content_end - self.content),
+        self.name);
+    return os;
   }
 };
 
-// struct symbol {
-//   virtual ~symbol() = default;
-//   virtual std::string_view name() const = 0;
-//   virtual uintptr_t value() const = 0;
-// };
+struct symbol final {
+  uintptr_t value;
+  std::string_view name;
+  friend std::ostream& operator<<(std::ostream& os, symbol const& self) {
+    std::print(os, "(symbol value:0x{:012x} name:{})", self.value, self.name);
+    return os;
+  }
+};
 
 struct binary final {
   context& cx_;
   std::function<view<section>()> sections {};
+  std::function<view<symbol>()> symbols {};
 
   friend std::ostream& operator<<(std::ostream& os, binary const& self) {
-    return os << "(binary"
-              << " sectionCount:" << self.sections().count() << ")";
+    std::print(os, "(binary sectionCount:{})", self.sections().count());
+    return os;
   }
 };
 

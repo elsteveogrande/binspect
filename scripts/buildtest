@@ -16,11 +16,14 @@ set -xeuo pipefail
 
 mkdir -p build
 
+if [[ $CC =~ "clang" ]]; then STDCXX=libc++; else STDCXX=libstdc++; fi
+
 "${CC}"                         \
   @compile_flags.txt            \
   -g                            \
   "-${OPT}"                     \
   -o "${PROG}"                  \
   -fsanitize="${SAN}"           \
+  -stdlib="${STDCXX}"           \
   -UNDEBUG                      \
   "${TESTCC}"

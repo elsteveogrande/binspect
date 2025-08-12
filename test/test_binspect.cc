@@ -68,8 +68,13 @@ int main(int argc, char** argv) {
 
   std::cout << *bin << '\n';
   for (auto section : bin->sections()) {
-    // std::cout << "... " << section << '\n';
+    std::cout << "... " << section << '\n';
     (void) section;
+  }
+
+  for (auto symbol : bin->symbols()) {
+    std::cout << "... " << symbol << '\n';
+    (void) symbol;
   }
 
   return 0;

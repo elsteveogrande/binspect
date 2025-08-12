@@ -7,9 +7,13 @@ fi
 
 set -xeuo pipefail
 
-# Quick, basic test
-OPT=O0 scripts/buildtest
-build/test test/files/elf.64.le.exe
+export PROG=build/test
+export COMP=${COMP:-llvm}
+export OPT=${OPT:--Og}
+export SAN=${SAN:-}
+
+scripts/buildtest
+$PROG test/files/elf.64.le.exe
 
 # Automated cleanups + checks
 find include/ test/ -type f -name \*.h -o -name \*\.cc \

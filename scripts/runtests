@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+
+if [[ ! -d include ]] ; then
+  echo "chdir to project root, then run as: scripts/ci"
+  exit 1
+fi
+
+if [[ -z $PROG ]] ; then echo "need PROG" ; exit 1 ; fi
+
+set -xeuo pipefail
+
+for F in test/files/elf*.exe test/files/elf*.so ; do  $PROG $F ; done

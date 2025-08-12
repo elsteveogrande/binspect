@@ -5,31 +5,45 @@ if [[ ! -d include ]] ; then
   exit 1
 fi
 
-CC=${CC:-clang++}
-TESTCC=test/test_binspect.cc
-BUILD=build
-OPT=${OPT:-Og}
-SAN=${SAN:address}
+TESTCC=${TESTCC:-test/test_binspect.cc}
+BUILD=${BUILD:-build}
 PROG=${PROG:-$BUILD/test}
+OPT=${OPT:--Og}
+FSAN=${FSAN:-}
+COMP=${COMP:llvm}
 
-set -xeuo pipefail
+mkdir -p "${BUILD}"
 
-mkdir -p build
+CC=""
+if [[ -z $CC && $COMP == llvm ]] ; then CC=$(which clang++) ; fi
+if [[ -z $CC && $COMP == llvm ]] ; then CC=$(which clang++-20) ; fi
+if [[ -z $CC && $COMP == gcc ]] ; then CC=$(which g++-15) ; fi
+if [[ -z $CC && $COMP == gcc ]] ; then CC=$(which g++-14) ; fi
 
-if [[ ! -z $SAN ]]; then
-  FSAN="-fsanitize=${SAN}"
-else
-  FSAN=''
+if [[ -z $CC ]] ; then
+  echo "need COMP set to 'llvm' or 'gcc', and working clang++/g++"
+  exit 1
 fi
 
-if [[ $CC =~ "clang" ]]; then STDCXX=libc++; else STDCXX=libstdc++; fi
+if [[ $COMP == "gcc" && ! -z $FSAN ]] ; then
+  # Won't work on MacOS; just disable this even for CI.
+  # We'll test SAN w/ Clang + libc++
+  echo "no SAN for g++"
+  exit 1
+fi
+
+if [[ $COMP == "llvm" ]] ; then
+  STDLIB="-stdlib=libc++"
+else
+  STDLIB=
+fi
+
+set -xeuo pipefail
 
 "${CC}"                         \
   @compile_flags.txt            \
   -g                            \
-  "-${OPT}"                     \
-  -o "${PROG}"                  \
-  ${FSAN}                       \
-  -stdlib="${STDCXX}"           \
   -UNDEBUG                      \
+  ${FSAN} ${OPT} ${STDLIB}      \
+  -o "${PROG}"                  \
   "${TESTCC}"

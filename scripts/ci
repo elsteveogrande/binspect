@@ -6,43 +6,16 @@ if [[ ! -d include ]] ; then
 fi
 
 export CLANG=${CLANG:-clang++}
-export TESTCC=test/test_binspect.cc
 export BUILD=build
+export PROG="${BUILD}/test"
+export TESTCC=test/test_binspect.cc
 
 set -xeuo pipefail
 
 rm -rf build
 mkdir build
 
-for CC in clang++ g++-15 g++-14 ; do
-  { which $CC ; } || continue
-  export CC
-  for OPT in O0 Og Os ; do
-    export OPT
-    for SAN in "" undefined address ; do
-      if [[ $CC != 'clang++' && ! -z $SAN ]] ; then
-        # skip SAN on GCC; doesn't work on MacOS.
-        # SAN is covered with clang builds.
-        continue;
-      fi
-
-      export SAN
-      export PROG="${BUILD}/test"
-      scripts/buildtest
-
-      for FORMAT in elf ; do
-        for BITS in 64 32 ; do
-          for ENDIAN in le be ; do
-            for TYPE in exe so ; do
-              BINFILE="test/files/${FORMAT}.${BITS}.${ENDIAN}.${TYPE}"
-              # Don't currently have big-endian shared libs
-              if [[ -f $BINFILE ]] ; then
-                "${PROG}" "${BINFILE}"
-              fi
-            done
-          done
-        done
-      done
-    done
-  done
+for COMP in llvm gcc ; do
+  COMP=$COMP OPT=-Os SAN= ./scripts/buildtest
+  PROG=$PROG ./scripts/runtests
 done

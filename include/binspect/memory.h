@@ -103,6 +103,8 @@ template <class T>
 struct res : std::expected<T, error> {
   using X = std::expected<T, error>;
 
+  operator bool() const { return this->has_value(); }
+
   static void __throw(error const& err) {
 #if defined(__cpp_exceptions) && __cpp_exceptions >= 199711L
     throw err;
@@ -123,9 +125,6 @@ struct res : std::expected<T, error> {
 // struct ref : res<std::shared_ptr<T>> {
 //   using base = res<std::shared_ptr<T>>;
 //   using base::__throw;
-
-// /** Truthy IFF this is not empty, and not error. */
-// operator bool() const { return this->has_value() && this->value().get(); }
 
 //   template <class... A>
 //   ref(A&&... args) : res<std::shared_ptr<T>> {std::forward<A>(args)...} {}

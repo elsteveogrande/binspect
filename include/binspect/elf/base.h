@@ -58,16 +58,36 @@ struct __elf_base {
 
   symbol __symbol(Sym const* sym, char const* names) const {
     auto* name_chars = names + sym->name_index;
-    return {.value = sym->value, .name = std::string_view(name_chars, strlen(name_chars))};
+    uint32_t flags = 0;
+    switch ((sym->info >> 4) & 0x0f) {
+    case 0:  flags |= uint32_t(symbol::flag::local); break;
+    case 1:  flags |= uint32_t(symbol::flag::global); break;
+    case 2:  flags |= uint32_t(symbol::flag::weak); break;
+    default: break;
+    }
+    switch (sym->info & 0x0f) {
+    case 1:  flags |= uint32_t(symbol::flag::data); break;
+    case 2:  flags |= uint32_t(symbol::flag::code); break;
+    default: flags |= uint32_t(symbol::flag::other); break;
+    }
+    return {
+        .value = sym->value,
+        .name = std::string_view(name_chars, strlen(name_chars)),
+        .flags = flags,
+        .size = sym->size};
   }
 
   view<symbol> symbols_view(this E const& self) {
     res<section> symtab;
     res<section> strtab;
     for (auto sec : self.sections_view()) {
-      if (sec.name == ".symtab") { symtab = res<section>(std::move(sec)); }
-      if (sec.name == ".strtab") { strtab = res<section>(std::move(sec)); }
-      if (symtab && strtab) {
+      if (symtab->name.empty() && sec.name == ".symtab") {
+        symtab = res<section>(std::move(sec));
+      }
+      if (strtab->name.empty() && sec.name == ".strtab") {
+        strtab = res<section>(std::move(sec));
+      }
+      if (symtab->name.size() && strtab->name.size()) {
         auto const* syms = (Sym*) (symtab->content);
         auto const size = symtab->size();
         if (!(size % sizeof(Sym))) {

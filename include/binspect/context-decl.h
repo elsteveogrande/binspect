@@ -1,5 +1,6 @@
 #pragma once
 
+#include "binspect/_config.h"
 #include "binspect/memory.h"
 
 namespace binspect {

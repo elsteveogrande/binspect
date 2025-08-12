@@ -6,55 +6,55 @@
 namespace binspect {
 namespace elf {
 
-template <class u16, class u32>
+template <class uint16_e, class uint32_e>
 struct elf32 {
-  u32 magic;      // (7F 45 4C 46)
-  u8 klass;       // (01) 32-bit, (02) 64-bit
-  u8 endian;      // (01) LE, (02) BE; officially called `EI_DATA`
-  u8 elfversion;  // (01)
-  u8 osabi;       // we ignore this
-  u8 abiversion;  // we ignore this
-  u8 _pad[7];     //
-  u16 type;       // Object file type // XXX worth adding an enum
-  u16 machine;    // Architecture
-  u32 version;    // (0x00000001) Object file version
-  u32 entry;      // Entry point virtual address
-  u32 phoff;      // Program header table file offset
-  u32 shoff;      // Section header table file offset
-  u32 flags;      // Processor-specific flags
-  u16 ehsize;     // ELF header size in bytes
-  u16 phentsize;  // Program header table entry size
-  u16 phnum;      // Program header table entry count
-  u16 shentsize;  // Section header table entry size
-  u16 shnum;      // Section header table entry count
-  u16 shstrndx;   // Section header string table index
+  uint32_e magic;      // (7F 45 4C 46)
+  uint8_t klass;       // (01) 32-bit, (02) 64-bit
+  uint8_t endian;      // (01) LE, (02) BE; officially called `EI_DATA`
+  uint8_t elfversion;  // (01)
+  uint8_t osabi;       // we ignore this
+  uint8_t abiversion;  // we ignore this
+  uint8_t _pad[7];     //
+  uint16_e type;       // Object file type // XXX worth adding an enum
+  uint16_e machine;    // Architecture
+  uint32_e version;    // (0x00000001) Object file version
+  uint32_e entry;      // Entry point virtual address
+  uint32_e phoff;      // Program header table file offset
+  uint32_e shoff;      // Section header table file offset
+  uint32_e flags;      // Processor-specific flags
+  uint16_e ehsize;     // ELF header size in bytes
+  uint16_e phentsize;  // Program header table entry size
+  uint16_e phnum;      // Program header table entry count
+  uint16_e shentsize;  // Section header table entry size
+  uint16_e shnum;      // Section header table entry count
+  uint16_e shstrndx;   // Section header string table index
 
   struct section32 {
-    u32 name_index;  // Section name (index into .shstrtab)
-    u32 type;        // Section type
-    u32 flags;       // Section flags
-    u32 addr;        // Section virtual addr at execution
-    u32 offset;      // Section file offset
-    u32 size;        // Section size in bytes
-    u32 link;        // Link to another section
-    u32 info;        // Additional section information
-    u32 addralign;   // Section alignment
-    u32 entsize;     // Entry size if section holds table
+    uint32_e name_index;  // Section name (index into .shstrtab)
+    uint32_e type;        // Section type
+    uint32_e flags;       // Section flags
+    uint32_e addr;        // Section virtual addr at execution
+    uint32_e offset;      // Section file offset
+    uint32_e size;        // Section size in bytes
+    uint32_e link;        // Link to another section
+    uint32_e info;        // Additional section information
+    uint32_e addralign;   // Section alignment
+    uint32_e entsize;     // Entry size if section holds table
   };
   static_assert(sizeof(section32) == 40);
 
   struct symbol32 {
-    u32 name_index;  // Section name (index into .strtab)
-    u8 info;         // Symbol type and binding
-    u8 other;        // Symbol visibility
-    u16 shndx;       // Section index [not reliable; ignore]
-    u32 value;       // Symbol value
-    u32 size;        // Symbol size
+    uint32_e name_index;  // Section name (index into .strtab)
+    uint8_t info;         // Symbol type and binding
+    uint8_t other;        // Symbol visibility
+    uint16_e shndx;       // Section index [not reliable; ignore]
+    uint32_e value;       // Symbol value
+    uint32_e size;        // Symbol size
   };
   static_assert(sizeof(symbol32) == 16);
 };
 
-struct elf32le_base : elf32<__endians::u16le, __endians::u32le> {};
+struct elf32le_base : elf32<__endians::uint16_le, __endians::uint32_le> {};
 struct elf32le final
     : elf32le_base,
       __elf_base<elf32le, elf32le_base::section32, elf32le_base::symbol32> {
@@ -64,7 +64,7 @@ struct elf32le final
 };
 static_assert(sizeof(elf32le) == 52);
 
-struct elf32be_base : elf32<__endians::u16be, __endians::u32be> {};
+struct elf32be_base : elf32<__endians::uint16_be, __endians::uint32_be> {};
 struct elf32be final
     : elf32be_base,
       __elf_base<elf32be, elf32be_base::section32, elf32be_base::symbol32> {

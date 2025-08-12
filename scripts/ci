@@ -34,10 +34,11 @@ for CC in clang++ g++-15 g++-14 ; do
         for BITS in 64 32 ; do
           for ENDIAN in le be ; do
             for TYPE in exe so ; do
-              # Don't currently have big-endian shared libs
-              if [[ "${FORMAT}-${ENDIAN}-${TYPE}" == "elf-be-so" ]]; then continue; fi
               BINFILE="test/files/${FORMAT}.${BITS}.${ENDIAN}.${TYPE}"
-              "${PROG}" "${BINFILE}"
+              # Don't currently have big-endian shared libs
+              if [[ -f $BINFILE ]] ; then
+                "${PROG}" "${BINFILE}"
+              fi
             done
           done
         done

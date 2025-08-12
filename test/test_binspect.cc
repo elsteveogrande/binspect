@@ -41,7 +41,11 @@ struct test_alloc : std::allocator<T> {
   void deallocate(T* ptr, size_t count) {
     ++deallocs_;
     dealloc_total_ += count;
+#if defined(__cpp_sized_deallocation) && __cpp_sized_deallocation >= 201309L
     ::operator delete[](ptr, count);
+#else
+    ::operator delete[](ptr);
+#endif
   }
 
   template <typename U>

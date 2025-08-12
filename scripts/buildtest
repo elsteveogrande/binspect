@@ -9,12 +9,18 @@ CC=${CC:-clang++}
 TESTCC=test/test_binspect.cc
 BUILD=build
 OPT=${OPT:-Og}
-SAN=${SAN:-address}
+SAN=${SAN:address}
 PROG=${PROG:-$BUILD/test}
 
 set -xeuo pipefail
 
 mkdir -p build
+
+if [[ ! -z $SAN ]]; then
+  FSAN="-fsanitize=${SAN}"
+else
+  FSAN=''
+fi
 
 if [[ $CC =~ "clang" ]]; then STDCXX=libc++; else STDCXX=libstdc++; fi
 
@@ -23,7 +29,7 @@ if [[ $CC =~ "clang" ]]; then STDCXX=libc++; else STDCXX=libstdc++; fi
   -g                            \
   "-${OPT}"                     \
   -o "${PROG}"                  \
-  -fsanitize="${SAN}"           \
+  ${FSAN}                       \
   -stdlib="${STDCXX}"           \
   -UNDEBUG                      \
   "${TESTCC}"

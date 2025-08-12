@@ -100,12 +100,8 @@ struct heap : std::pmr::unsynchronized_pool_resource {
 };
 
 template <class T>
-struct ref : private std::expected<std::shared_ptr<T>, error> {
-  using SP = std::shared_ptr<T>;
-  using X = std::expected<SP, error>;
-
-  /** Truthy IFF this is not empty, and not error. */
-  operator bool() const { return this->has_value() && this->value().get(); }
+struct res : std::expected<T, error> {
+  using X = std::expected<T, error>;
 
   static void __throw(error const& err) {
 #if defined(__cpp_exceptions) && __cpp_exceptions >= 199711L
@@ -116,23 +112,37 @@ struct ref : private std::expected<std::shared_ptr<T>, error> {
 #endif
   }
 
-  /** Return pointer to value if present, else throw error */
-  T* operator->(this auto& self) { return &*self; }
-
-  /** Return reference to value if present, else throw error */
-  T& operator*(this auto& self) {
-    if (!self.has_value()) { __throw(self.error()); }
-    if (!self.value().get()) { __throw(error(-1)); }
-    return *self.value().get();
-  }
-
-  ref() {}
-  ref(SP sp) : X(std::move(sp)) {}
-  ref(error err) : X(std::unexpected {std::move(err)}) {}
+  res() {}
+  res(error err) : X(std::unexpected {std::move(err)}) {}
 
   template <class... A>
-  explicit ref(heap& heap, A&&... args)
-      : ref {std::allocate_shared<T>(heap.alloc<T>(), std::forward<A>(args)...)} {}
+  res(A&&... args) : X {std::in_place_t {}, std::forward<A>(args)...} {}
 };
+
+// template <class T>
+// struct ref : res<std::shared_ptr<T>> {
+//   using base = res<std::shared_ptr<T>>;
+//   using base::__throw;
+
+// /** Truthy IFF this is not empty, and not error. */
+// operator bool() const { return this->has_value() && this->value().get(); }
+
+//   template <class... A>
+//   ref(A&&... args) : res<std::shared_ptr<T>> {std::forward<A>(args)...} {}
+
+//   template <class... A>
+//   ref(heap& heap, A&&... args)
+//       : ref {std::allocate_shared<T>(heap.alloc<T>(), std::forward<A>(args)...)} {}
+
+//   /** Return pointer to value if present, else throw error */
+//   T* operator->(this auto& self) { return &*self; }
+
+//   /** Return reference to value if present, else throw error */
+//   T& operator*(this auto& self) {
+//     if (!self.has_value()) { __throw(self.error()); }
+//     if (!self.value().get()) { __throw(error(-1)); }
+//     return *self.value().get();
+//   }
+// };
 
 }  // namespace binspect

@@ -36,10 +36,10 @@ struct mmap final {
     return (std::addressof(rhs) == this) ? *this : *new (this) mmap(std::move(rhs));
   }
 
-  static std::expected<mmap, error> map_file(fd&& fd) {
-    // Note: fd arg is "eaten" by this func, close after mmap is ok
-    auto* addr = (std::byte*) c::mmap(fd).value();
-    return mmap {addr, fd.size().value()};
+  static res<mmap> map_file(res<fd>&& fd) {
+    // Note: fd arg is "eaten" by this func; however closing fd right after mmap is ok
+    auto* addr = (std::byte*) c::mmap(*fd).value();
+    return res<mmap> {addr, fd->size().value()};
   }
 };
 

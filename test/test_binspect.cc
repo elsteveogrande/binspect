@@ -1,6 +1,5 @@
 #include "binspect/context.h"
 #include "binspect/fd.h"
-#include "binspect/memory.h"
 #include "binspect/mmap.h"
 
 #include <cassert>
@@ -13,25 +12,25 @@ size_t alloc_total_ {};
 size_t dealloc_total_ {};
 size_t peak_ {};
 
+void dump_stats() {
+  if (allocs_ || deallocs_) {
+    std::cerr
+        << std::format(
+               "allocs: {} ({} bytes) deallocs: {} ({} bytes); peak {} bytes",
+               allocs_,
+               alloc_total_,
+               deallocs_,
+               dealloc_total_,
+               peak_)
+        << '\n';
+  }
+  assert(allocs_ == deallocs_);
+  assert(alloc_total_ == dealloc_total_);
+}
+
 namespace {
 template <typename T>
 struct test_alloc : std::allocator<T> {
-  ~test_alloc() {
-    if (allocs_ || deallocs_) {
-      std::cerr
-          << std::format(
-                 "allocs: {} ({} bytes) deallocs: {} ({} bytes); peak {} bytes",
-                 allocs_,
-                 alloc_total_,
-                 deallocs_,
-                 dealloc_total_,
-                 peak_)
-          << '\n';
-    }
-    assert(allocs_ == deallocs_);
-    assert(alloc_total_ == dealloc_total_);
-  }
-
   T* allocate(size_t count) {
     ++allocs_;
     alloc_total_ += count;
@@ -61,8 +60,8 @@ int main(int argc, char** argv) {
   binspect::heap heap {resource};
   binspect::context cx {heap};
 
-  auto mm = binspect::fd::open(path).and_then(binspect::mmap::map_file);
-  assert(mm);
+  auto fd = binspect::fd::open(path);
+  auto mm = binspect::mmap::map_file(std::move(fd));
   auto bin = cx.binary_at(mm->addr_);
   assert(bin);
 
@@ -77,5 +76,6 @@ int main(int argc, char** argv) {
     (void) symbol;
   }
 
+  dump_stats();
   return 0;
 }

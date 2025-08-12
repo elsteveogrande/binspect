@@ -13,8 +13,8 @@ template <class T>
 struct view : std::ranges::view_interface<view<T>> {
   std::function<T(size_t)> at {};
   std::function<size_t()> count {};
-  // std::function<T()> first {};
-  // std::function<T(T const&)> next {};
+
+  static view empty() { return {.at=nullptr, .count=[] {return 0;}}; }
 
   template <class X>
   struct __rand_access {
@@ -27,12 +27,12 @@ struct view : std::ranges::view_interface<view<T>> {
   };
 
   __rand_access<T> begin() const {
-    if (at && count) { return __rand_access{*this, 0}; }
+    if (at && count) { return __rand_access<T>{*this, 0}; }
     assert (false && "cannot support iteration");
   }
 
   __rand_access<T> end() const {
-    if (at && count) { return __rand_access{*this, count()}; }
+    if (at && count) { return __rand_access<T>{*this, count()}; }
     assert (false && "cannot support iteration");
   }
 };

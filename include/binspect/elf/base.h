@@ -1,5 +1,6 @@
 #pragma once
 
+#include "binspect/memory.h"
 #include "binspect/things.h"
 
 #include <cstring>
@@ -11,8 +12,9 @@ namespace elf {
 // These support 64- and 32-bit layouts,
 // either little- or big- endian.
 
-template <class E>
+template <class E, class Sec, class Sym>
 struct __elf_base {
+
   template <typename T = std::byte>
   T const*
   ptr(this E const& self,
@@ -23,7 +25,7 @@ struct __elf_base {
   }
 
   auto const* section_header_at(this E const& self, size_t i) {
-    return self.template ptr<typename E::section_t>(self.shoff, i, self.shentsize);
+    return self.template ptr<Sec>(self.shoff, i, self.shentsize);
   }
 
   char const* string_table(this E const& self, size_t i) {
@@ -39,18 +41,44 @@ struct __elf_base {
     auto shdr = self.section_header_at(i);
     auto strs = self.string_table(self.shstrndx);
     auto* name_chars = strs + shdr->name_index;
-    std::string_view name {name_chars, strlen(name_chars)};
     return {
         .vm_addr = shdr->addr,
-        .name = name,
+        .name = {name_chars, strlen(name_chars)},
         .content = self.ptr(shdr->offset),
         .content_end = self.ptr(shdr->offset, shdr->size),
     };
   }
 
+  res<section> find_section(this E const& self, std::string_view name) {
+    for (auto sec : self.sections_view()) {
+      if (sec.name == name) { return sec; }
+    }
+    return {name, ENOENT};
+  }
+
+  symbol __symbol(Sym const* sym, char const* names) const {
+    auto* name_chars = names + sym->name_index;
+    return {.value = sym->value, .name = std::string_view(name_chars, strlen(name_chars))};
+  }
+
   view<symbol> symbols_view(this E const& self) {
-    (void) self;
-    return {};
+    res<section> symtab;
+    res<section> strtab;
+    for (auto sec : self.sections_view()) {
+      if (sec.name == ".symtab") { symtab = res<section>(std::move(sec)); }
+      if (sec.name == ".strtab") { strtab = res<section>(std::move(sec)); }
+      if (symtab && strtab) {
+        auto const* syms = (Sym*) (symtab->content);
+        auto const size = symtab->size();
+        if (!(size % sizeof(Sym))) {
+          auto count = size / sizeof(Sym);
+          auto* names = (char const*) (strtab->content);
+          return {.at = [=, &self](size_t i) { return self.__symbol(syms + i, names); },
+                  .count = [=] { return count; }};
+        }
+      }
+    }
+    return view<symbol>::empty();
   }
 };
 

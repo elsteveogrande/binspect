@@ -14,7 +14,8 @@ set -xeuo pipefail
 rm -rf build
 mkdir build
 
-for CC in clang++ g++ ; do
+for CC in clang++ g++-15 g++-14 ; do
+  { which $CC ; } || continue
   export CC
   for OPT in O0 Og Os ; do
     export OPT

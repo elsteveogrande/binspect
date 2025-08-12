@@ -1,6 +1,7 @@
 #pragma once
 
 #include "binspect/error.h"
+#include "binspect/memory.h"
 
 #include <cstddef>
 #include <cstring>
@@ -11,8 +12,8 @@
 namespace binspect {
 
 namespace c {
-std::expected<int, error> open(std::string_view path);
-std::expected<off_t, error> lseek(int fileno, off_t offset, int whence);
+res<int> open(std::string_view path);
+res<off_t> lseek(int fileno, off_t offset, int whence);
 }  // namespace c
 
 struct fd {
@@ -41,32 +42,32 @@ struct fd {
     }
   }
 
-  std::expected<size_t, error> size() const {
+  res<size_t> size() const {
     if (size_ > 0) { return size_t(size_); }
-    return std::unexpected {error {}};
+    return error {"empty file"};
   }
 
-  static std::expected<fd, error> open(std::string_view path) {
+  static res<fd> open(std::string_view path) {
     auto fileno = c::open(path);
-    if (!fileno) { return std::unexpected {fileno.error()}; }
+    if (!fileno) { return fileno.error(); }
     auto size = c::lseek(*fileno, 0, SEEK_END);
-    if (!size) { return std::unexpected {size.error()}; }
-    return fd {fileno.value(), *size};
+    if (!size) { return size.error(); }
+    return res<fd> {fileno.value(), *size};
   }
 };
 
 namespace c {
-inline std::expected<int, error> open(std::string_view path) {
+inline res<int> open(std::string_view path) {
   char path_buf[PATH_MAX + 1] {0};
   strncpy(path_buf, path.data(), sizeof(path_buf));
   int ret = ::open(path_buf, O_RDONLY);
-  if (ret == -1) { return std::unexpected<error> {error {}}; }
+  if (ret == -1) { return error {path}; }
   return ret;
 }
 
-inline std::expected<off_t, error> lseek(int fileno, off_t offset, int whence) {
+inline res<off_t> lseek(int fileno, off_t offset, int whence) {
   auto ret = ::lseek(fileno, offset, whence);
-  if (ret == -1) { return std::unexpected<error> {error {}}; }
+  if (ret == -1) { return error {"could not lseek"}; }
   return ret;
 }
 

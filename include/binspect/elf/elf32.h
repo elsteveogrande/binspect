@@ -6,8 +6,8 @@
 namespace binspect {
 namespace elf {
 
-template <class E, class u16, class u32>
-struct elf32 : __elf_base<E> {
+template <class u16, class u32>
+struct elf32 {
   u32 magic;      // (7F 45 4C 46)
   u8 klass;       // (01) 32-bit, (02) 64-bit
   u8 endian;      // (01) LE, (02) BE; officially called `EI_DATA`
@@ -41,24 +41,38 @@ struct elf32 : __elf_base<E> {
     u32 addralign;   // Section alignment
     u32 entsize;     // Entry size if section holds table
   };
-  using section_t = section32;
+  static_assert(sizeof(section32) == 40);
+
+  struct symbol32 {
+    u32 name_index;  // Section name (index into .strtab)
+    u8 info;         // Symbol type and binding
+    u8 other;        // Symbol visibility
+    u16 shndx;       // Section index [not reliable; ignore]
+    u32 value;       // Symbol value
+    u32 size;        // Symbol size
+  };
+  static_assert(sizeof(symbol32) == 16);
 };
 
-struct elf32le final : elf32<elf32le, __endians::u16le, __endians::u32le> {
+struct elf32le_base : elf32<__endians::u16le, __endians::u32le> {};
+struct elf32le final
+    : elf32le_base,
+      __elf_base<elf32le, elf32le_base::section32, elf32le_base::symbol32> {
   bool valid() const {
     return magic == 0x464c457f && klass == 1 && endian == 1 && elfversion == 1 && version == 1;
   }
 };
 static_assert(sizeof(elf32le) == 52);
-static_assert(sizeof(elf32le::section32) == 40);
 
-struct elf32be final : elf32<elf32be, __endians::u16be, __endians::u32be> {
+struct elf32be_base : elf32<__endians::u16be, __endians::u32be> {};
+struct elf32be final
+    : elf32be_base,
+      __elf_base<elf32be, elf32be_base::section32, elf32be_base::symbol32> {
   bool valid() const {
     return magic == 0x7f454c46 && klass == 1 && endian == 2 && elfversion == 1 && version == 1;
   }
 };
 static_assert(sizeof(elf32be) == 52);
-static_assert(sizeof(elf32le::section32) == 40);
 
 }  // namespace elf
 

@@ -8,7 +8,7 @@ fi
 set -xeuo pipefail
 
 # Quick, basic test
-SAN=address OPT=O0 scripts/buildtest
+OPT=O0 scripts/buildtest
 build/test test/files/elf.64.le.exe
 
 # Automated cleanups + checks

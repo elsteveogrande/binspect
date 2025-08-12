@@ -17,6 +17,8 @@ struct section final {
   std::byte const* content;
   std::byte const* content_end;
 
+  size_t size() const { return size_t(content_end - content); }
+
   friend std::ostream& operator<<(std::ostream& os, section const& self) {
     std::print(
         os,
@@ -31,6 +33,7 @@ struct section final {
 struct symbol final {
   uintptr_t value;
   std::string_view name;
+
   friend std::ostream& operator<<(std::ostream& os, symbol const& self) {
     std::print(os, "(symbol value:0x{:012x} name:{})", self.value, self.name);
     return os;

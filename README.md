@@ -74,7 +74,7 @@ by `std::pmr`.
 
 ## TODO
 
-* ELF symbols
+* ELF "note" entries
 * Optional cache
 * Find companion debug info files (.dwo, .dSYM)
 * Delegate calls for binary->{symbols, sections} to companions

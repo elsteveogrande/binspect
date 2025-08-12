@@ -51,10 +51,7 @@ struct test_alloc : std::allocator<T> {
 };
 }  // namespace
 
-int main(int argc, char** argv) {
-  assert(argc == 2);
-  std::string_view path {argv[1]};
-
+void test(std::string_view path) {
   test_alloc<std::byte> alloc;
   binspect::alloc_resource resource {alloc};
   binspect::heap heap {resource};
@@ -75,7 +72,11 @@ int main(int argc, char** argv) {
     std::cout << "... " << symbol << '\n';
     (void) symbol;
   }
+}
 
-  dump_stats();
+int main(int argc, char** argv) {
+  assert(argc == 2);  // expect binary file to test with as the only arg
+  test(argv[1]);      // actually do the tests within `test`
+  dump_stats();       // at this point everything's out of scope, so check alloc stats
   return 0;
 }

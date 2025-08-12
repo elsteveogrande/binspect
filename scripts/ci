@@ -19,7 +19,13 @@ for CC in clang++ g++-15 g++-14 ; do
   export CC
   for OPT in O0 Og Os ; do
     export OPT
-    for SAN in undefined address ; do
+    for SAN in "" undefined address ; do
+      if [[ $CC != 'clang++' && ! -z $SAN ]] ; then
+        # skip SAN on GCC; doesn't work on MacOS.
+        # SAN is covered with clang builds.
+        continue;
+      fi
+
       export SAN
       export PROG="${BUILD}/test"
       scripts/buildtest

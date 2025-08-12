@@ -16,6 +16,16 @@ rm -rf build
 mkdir build
 
 for COMP in llvm gcc ; do
-  COMP=$COMP OPT=-Os SAN= ./scripts/buildtest
-  PROG=$PROG ./scripts/runtests
+  COMP=$COMP OPT=-Os FSAN= ./scripts/buildtest
+  ./scripts/runtests
+done
+
+for FSAN in "-fsanitize=address" "-fsanitize=undefined" ; do
+  COMP=llvm OPT=-Os FSAN=$FSAN ./scripts/buildtest
+  ./scripts/runtests
+done
+
+for OPT in "-O0" "-Og" "-O3" ; do
+  COMP=llvm OPT=$OPT FSAN= ./scripts/buildtest
+  ./scripts/runtests
 done

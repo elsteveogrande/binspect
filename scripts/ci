@@ -5,7 +5,6 @@ if [[ ! -d include ]] ; then
   exit 1
 fi
 
-export CLANG=${CLANG:-clang++}
 export BUILD=build
 export PROG="${BUILD}/test"
 export TESTCC=test/test_binspect.cc

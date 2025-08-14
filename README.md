@@ -74,7 +74,6 @@ by `std::pmr`.
 
 ## TODO
 
-* ELF "note" entries
 * Optional cache
 * Find companion debug info files (.dwo, .dSYM)
 * Delegate calls for binary->{symbols, sections} to companions
@@ -82,5 +81,3 @@ by `std::pmr`.
 * Mach-O sections
 * Mach-O symbols
 * Collect all debug sections, in binary + companions (.debug_line, .dwo_debug_line, ...)
-
-

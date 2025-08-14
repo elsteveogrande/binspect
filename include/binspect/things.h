@@ -62,7 +62,6 @@ struct symbol final {
 };
 
 struct binary final {
-  context& cx_;
   std::function<view<section>()> sections {};
   std::function<view<symbol>()> symbols {};
 

@@ -15,7 +15,6 @@ inline res<binary> context::binary_at(void const* ptr) {
       auto* elf = (elf::elf64le const*) ptr;
       if (elf->valid()) {
         return res<binary>(
-            *this,
             [elf]() { return elf->sections_view(); },
             [elf]() { return elf->symbols_view(); });
       }
@@ -24,7 +23,6 @@ inline res<binary> context::binary_at(void const* ptr) {
       auto* elf = (elf::elf32le const*) ptr;
       if (elf->valid()) {
         return res<binary>(
-            *this,
             [elf]() { return elf->sections_view(); },
             [elf]() { return elf->symbols_view(); });
       }
@@ -33,7 +31,6 @@ inline res<binary> context::binary_at(void const* ptr) {
       auto* elf = (elf::elf64be const*) ptr;
       if (elf->valid()) {
         return res<binary>(
-            *this,
             [elf]() { return elf->sections_view(); },
             [elf]() { return elf->symbols_view(); });
       }
@@ -42,8 +39,7 @@ inline res<binary> context::binary_at(void const* ptr) {
       auto* elf = (elf::elf32be const*) ptr;
       if (elf->valid()) {
         return res<binary>(
-            *this,
-            [=]() { return elf->sections_view(); },
+            [elf]() { return elf->sections_view(); },
             [elf]() { return elf->symbols_view(); });
       }
     }

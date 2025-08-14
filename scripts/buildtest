@@ -33,7 +33,7 @@ if [[ $COMP == "gcc" && ! -z $FSAN ]] ; then
 fi
 
 if [[ $COMP == "llvm" ]] ; then
-  STDLIB="-stdlib=libc++"
+  STDLIB=   #"-stdlib=libc++"
 else
   STDLIB=
 fi

@@ -1,7 +1,9 @@
 #pragma once
 
+#include "binspect/binary.h"
 #include "binspect/memory.h"
-#include "binspect/things.h"
+#include "binspect/section.h"
+#include "binspect/symbol.h"
 
 #include <cstring>
 

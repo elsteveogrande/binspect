@@ -1,7 +1,5 @@
 #pragma once
 
-#include "binspect/view.h"
-
 #include <format>
 #include <optional>
 #include <ostream>
@@ -9,27 +7,6 @@
 #include <string_view>
 
 namespace binspect {
-
-struct context;
-
-struct section final {
-  uintptr_t vm_addr;
-  std::string_view name;
-  std::byte const* content;
-  std::byte const* content_end;
-
-  size_t size() const { return size_t(content_end - content); }
-
-  friend std::ostream& operator<<(std::ostream& os, section const& self) {
-    std::print(
-        os,
-        "(section vm_addr:0x{:012x} size:{} name:{})",
-        self.vm_addr,
-        (self.content_end - self.content),
-        self.name);
-    return os;
-  }
-};
 
 struct symbol final {
   enum class flag : uint32_t {
@@ -57,16 +34,6 @@ struct symbol final {
         self.flags,
         self.size.value_or(-1),
         self.name);
-    return os;
-  }
-};
-
-struct binary final {
-  std::function<view<section>()> sections {};
-  std::function<view<symbol>()> symbols {};
-
-  friend std::ostream& operator<<(std::ostream& os, binary const& self) {
-    std::print(os, "(binary sectionCount:{})", self.sections().count());
     return os;
   }
 };

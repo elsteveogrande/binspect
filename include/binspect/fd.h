@@ -58,7 +58,8 @@ struct fd {
 
 namespace c {
 inline res<int> open(std::string_view path) {
-  char path_buf[PATH_MAX + 1] {0};
+  constexpr static size_t kMaxPath = 1024;
+  char path_buf[kMaxPath + 1] {0};
   strncpy(path_buf, path.data(), sizeof(path_buf));
   int ret = ::open(path_buf, O_RDONLY);
   if (ret == -1) { return error {path}; }

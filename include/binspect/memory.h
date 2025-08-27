@@ -5,6 +5,10 @@
 #include <cassert>
 #include <cstddef>
 #include <expected>
+#if !defined(__cpp_exceptions)
+#include <iostream>
+#include <print>
+#endif
 
 namespace binspect {
 
@@ -15,11 +19,11 @@ struct res : std::expected<T, error> {
   operator bool() const { return this->has_value(); }
 
   static void __throw(error const& err) {
-#if defined(__cpp_exceptions) && __cpp_exceptions >= 199711L
+#if defined(__cpp_exceptions)
     throw err;
 #else
-    std::cerr << err << '\n';
-    abort();
+    std::println(std::cerr, "{}", err);
+    std::unreachable();
 #endif
   }
 

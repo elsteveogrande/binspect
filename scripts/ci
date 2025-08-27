@@ -5,17 +5,23 @@ if [[ ! -d include ]] ; then
   exit 1
 fi
 
+set -xeuo pipefail
+
 export BUILD=build
+mkdir -p $BUILD
+
+for TESTN in error ; do
+  export PROG="${BUILD}/test_${TESTN}"
+  export TESTCC="test/test_${TESTN}.cc"
+  COMP=llvm FSAN="-fsanitize=address,undefined" OPT="-Og" ./scripts/buildtest
+  $PROG
+done
+
 export PROG="${BUILD}/test"
 export TESTCC=test/test_binspect.cc
 
-set -xeuo pipefail
-
-rm -rf build
-mkdir build
-
 for COMP in llvm gcc ; do
-  COMP=$COMP OPT=-Os FSAN= ./scripts/buildtest
+  COMP=$COMP OPT= FSAN= ./scripts/buildtest
   ./scripts/runtests
 done
 
@@ -24,7 +30,7 @@ for FSAN in "-fsanitize=address" "-fsanitize=undefined" ; do
   ./scripts/runtests
 done
 
-for OPT in "-O0" "-Og" "-O3" ; do
-  COMP=llvm OPT=$OPT FSAN= ./scripts/buildtest
+for OPT in "-fno-exceptions" "-fno-rtti" ; do
+  COMP=llvm OPT=$OPT FSAN=$FSAN ./scripts/buildtest
   ./scripts/runtests
 done

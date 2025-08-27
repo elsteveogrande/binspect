@@ -44,7 +44,7 @@ struct fd {
 
   res<size_t> size() const {
     if (size_ > 0) { return size_t(size_); }
-    return error {"empty file"};
+    return error {.msg_ = "empty file"};
   }
 
   static res<fd> open(std::string_view path) {
@@ -62,13 +62,13 @@ inline res<int> open(std::string_view path) {
   char path_buf[kMaxPath + 1] {0};
   strncpy(path_buf, path.data(), sizeof(path_buf));
   int ret = ::open(path_buf, O_RDONLY);
-  if (ret == -1) { return error {path}; }
+  if (ret == -1) { return error {.errno_ = errno, .msg_ = path}; }
   return ret;
 }
 
 inline res<off_t> lseek(int fileno, off_t offset, int whence) {
   auto ret = ::lseek(fileno, offset, whence);
-  if (ret == -1) { return error {"could not lseek"}; }
+  if (ret == -1) { return error {.errno_ = errno, .msg_ = "could not lseek"}; }
   return ret;
 }
 

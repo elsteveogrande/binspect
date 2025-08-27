@@ -10,7 +10,7 @@ set -xeuo pipefail
 export BUILD=build
 mkdir -p $BUILD
 
-for TESTN in error fd ; do
+for TESTN in error fd mmap ; do
   export PROG="${BUILD}/test_${TESTN}"
   export TESTCC="test/test_${TESTN}.cc"
   COMP=llvm FSAN="-fsanitize=address,undefined" OPT="-Og" ./scripts/buildtest

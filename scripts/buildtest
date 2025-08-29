@@ -55,8 +55,17 @@ fi
 
 set -xeuo pipefail
 
+if [[ $COMP == gcc ]]; then
+  FLAGSFILE=$(mktemp -t compile_flags.XXXXXX)
+  cat compile_flags.txt | sed \
+    's/-Wreturn-stack-address/-Wreturn-local-addr/' \
+    > "${FLAGSFILE}"
+else
+  FLAGSFILE="compile_flags.txt"
+fi
+
 "${CC}"                         \
-  @compile_flags.txt            \
+  "@${FLAGSFILE}"               \
   -g -Og -fno-inline            \
   -UNDEBUG                      \
   ${FSAN} ${OPT} ${STDLIB}      \

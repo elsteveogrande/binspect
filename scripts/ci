@@ -10,27 +10,61 @@ set -xeuo pipefail
 export BUILD=build
 mkdir -p $BUILD
 
-for TESTN in error fd mmap ; do
-  export PROG="${BUILD}/test_${TESTN}"
-  export TESTCC="test/test_${TESTN}.cc"
+# Individual unit tests
+
+for UNIT in error fd mmap ; do
+  export PROG="${BUILD}/test_${UNIT}"
+  export TESTCC="test/test_${UNIT}.cc"
   COMP=llvm FSAN="-fsanitize=address,undefined" OPT="-Og" ./scripts/buildtest
   $PROG
 done
 
+# `test_binspect` tests everything, somewhat redundantly, but exercises
+# everything in one shot, including things the unit tests above miss, e.g.
+# setting up a `context` and running from within some application
+
+# Using clang with "standard" option set
 export PROG="${BUILD}/test"
-export TESTCC=test/test_binspect.cc
+export TESTCC="test/test_binspect.cc"
+export COMP="llvm"
+export OPT="-Og -g"
+export FSAN=""
+./scripts/buildtest
+./scripts/runtests
 
-for COMP in llvm gcc ; do
-  COMP=$COMP OPT= FSAN= ./scripts/buildtest
-  ./scripts/runtests
-done
+# ASAN + UBSAN, no optimizations
+export PROG="${BUILD}/test"
+export TESTCC="test/test_binspect.cc"
+export COMP="llvm"
+export OPT="-O0 -g"
+export FSAN="-fsanitize=address,undefined"
+./scripts/buildtest
+./scripts/runtests
 
-for FSAN in "-fsanitize=address,undefined" ; do
-  COMP=llvm OPT=-Os FSAN=$FSAN ./scripts/buildtest
-  ./scripts/runtests
-done
+# ASAN + UBSAN, full optimizations + LTO
+# (unsure whether LTO affects much in a header-only lib though)
+export PROG="${BUILD}/test"
+export TESTCC="test/test_binspect.cc"
+export COMP="llvm"
+export OPT="-O3 -flto -g"
+export FSAN="-fsanitize=address,undefined"
+./scripts/buildtest
+./scripts/runtests
 
-for OPT in "-fno-exceptions" "-fno-rtti" ; do
-  COMP=llvm OPT=$OPT FSAN=$FSAN ./scripts/buildtest
-  ./scripts/runtests
-done
+# GCC + libstdc++
+export PROG="${BUILD}/test"
+export TESTCC="test/test_binspect.cc"
+export OPT="-Os"
+export FSAN=""
+export COMP="gcc"
+./scripts/buildtest
+./scripts/runtests
+
+# Without exceptions and RTTI
+export PROG="${BUILD}/test"
+export TESTCC="test/test_binspect.cc"
+export OPT="-Os -fno-exceptions -fno-rtti"
+export FSAN=""
+export COMP="llvm"
+./scripts/buildtest
+./scripts/runtests

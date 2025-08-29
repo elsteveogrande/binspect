@@ -10,7 +10,7 @@ set -xeuo pipefail
 export PROG=build/test
 export COMP=${COMP:-llvm}
 export OPT=${OPT:--O1 -fno-inline}
-export SAN=${SAN:-}
+export SAN=${SAN:--fsanitize=address,undefined}
 
 scripts/buildtest
 $PROG test/files/elf.64.le.exe

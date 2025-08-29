@@ -1,5 +1,6 @@
 #pragma once
 
+#include "binspect/binary.h"
 #include "binspect/context-decl.h"
 #include "binspect/elf/elf32.h"
 #include "binspect/elf/elf64.h"

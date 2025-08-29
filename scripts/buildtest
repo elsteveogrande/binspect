@@ -15,11 +15,13 @@ COMP=${COMP:llvm}
 
 mkdir -p "${BUILD}"
 
+MOREFLAGS=""
 CC=""
 if [[ $COMP == llvm ]] ; then
   for CCX in clang++-22 clang++-21 clang++-20 clang++ ; do
     { which $CCX || continue ; }
     CC=$CCX
+    MOREFLAGS="-Wreturn-stack-address"
     break
   done
 elif [[ $COMP == gcc ]] ; then
@@ -28,6 +30,7 @@ elif [[ $COMP == gcc ]] ; then
     # Ensure this isn't e.g. "Apple clang" posing as gcc
     { $CCX --version 2>&1 | head -n1 | cut -c-3 | grep 'g++' || continue ; }
     CC=$CCX
+    MOREFLAGS="-Wreturn-local-addr"
     break
   done
 fi

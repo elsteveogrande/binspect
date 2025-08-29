@@ -6,6 +6,7 @@
 -Wextra
 -Wpedantic
 -Wconversion
+-Wdeprecated-copy-dtor
 -Werror
 -UNDEBUG
 -Iinclude

@@ -12,11 +12,9 @@
 
 namespace binspect {
 
-template <class T>
-struct res : std::expected<T, error> {
-  using X = std::expected<T, error>;
-
-  operator bool() const { return this->has_value(); }
+template <class T, class X = std::expected<T, error>>
+struct res : X {
+  using X::operator bool;
 
   static void __throw(error const& err) {
 #if defined(__cpp_exceptions)
@@ -28,7 +26,7 @@ struct res : std::expected<T, error> {
   }
 
   res() {}
-  res(error err) : X(std::unexpected {std::move(err)}) {}
+  res(error err) : X(std::move(std::unexpected(std::move(err)))) {}
 
   template <class... A>
   res(A&&... args) : X {std::in_place_t {}, std::forward<A>(args)...} {}

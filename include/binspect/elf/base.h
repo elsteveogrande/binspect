@@ -1,9 +1,9 @@
 #pragma once
 
-#include "binspect/binary.h"
 #include "binspect/memory.h"
 #include "binspect/section.h"
 #include "binspect/symbol.h"
+#include "binspect/view.h"
 
 #include <cstring>
 
@@ -35,8 +35,8 @@ struct __elf_base {
   }
 
   view<section> sections_view(this E const& self) {
-    return {.at = [&self](size_t i) -> section { return self.section_at(i); },
-            .count = [&self]() -> size_t { return self.shnum; }};
+    return {.at_ = [&self](size_t i) -> section { return self.section_at(i); },
+            .count_ = [&self]() -> size_t { return self.shnum; }};
   }
 
   section section_at(this E const& self, size_t i) {
@@ -95,8 +95,8 @@ struct __elf_base {
         if (!(size % sizeof(Sym))) {
           auto count = size / sizeof(Sym);
           auto* names = (char const*) (strtab->content);
-          return {.at = [=, &self](size_t i) { return self.__symbol(syms + i, names); },
-                  .count = [=] { return count; }};
+          return {.at_ = [=, &self](size_t i) { return self.__symbol(syms + i, names); },
+                  .count_ = [=] { return count; }};
         }
       }
     }

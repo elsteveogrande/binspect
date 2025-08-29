@@ -25,7 +25,7 @@ for COMP in llvm gcc ; do
   ./scripts/runtests
 done
 
-for FSAN in "-fsanitize=address" "-fsanitize=undefined" ; do
+for FSAN in "-fsanitize=address,undefined" ; do
   COMP=llvm OPT=-Os FSAN=$FSAN ./scripts/buildtest
   ./scripts/runtests
 done

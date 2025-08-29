@@ -23,7 +23,7 @@ The only installation is:
 * in your program, include `binspect/binspect.h`
 
 Example minimal program:
-(see also [test/test_binspect.cc](test/test_binspect.cc))
+(see also [test/TestBinary.cc](test/TestBinary.cc))
 
 ```
 // Context object: contains things needed for your binspect sesh, mainly
@@ -42,6 +42,11 @@ auto bin = cx.binary_at(mm->addr_);
 std::cout << *bin << '\n';
 for (auto section : bin->sections()) { std::cout << "... " << section << '\n'; }
 ```
+
+## Tests
+
+* Quick test for local dev: `./t`
+* Full test for local dev + CI: `./ci`
 
 ## Discussion
 

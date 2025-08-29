@@ -66,8 +66,6 @@ fi
 
 "${CC}"                         \
   "@${FLAGSFILE}"               \
-  -g -Og -fno-inline            \
-  -UNDEBUG                      \
   ${FSAN} ${OPT} ${STDLIB}      \
   -o "${PROG}"                  \
   "${TESTCC}"

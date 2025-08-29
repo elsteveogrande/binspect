@@ -5,12 +5,17 @@ if [[ ! -d include ]] ; then
   exit 1
 fi
 
-set -xeuo pipefail
+set -euo pipefail
 
-export PROG=build/test
 export COMP=${COMP:-llvm}
-export OPT=${OPT:--O1 -fno-inline}
-export SAN=${SAN:--fsanitize=address,undefined}
+export OPT=${OPT:--O0 -fno-inline -fsanitize=address,undefined}
+export TESTCC=${TESTCC:-test/TestBinary.cc}
+export PROG=$(echo $TESTCC | sed 's#test/#build/#' | sed 's/.cc$/.cc.exe/')
+
+echo "COMP    ${COMP}"
+echo "OPT     ${OPT}"
+echo "TESTCC  ${TESTCC}"
+echo "PROG    ${PROG}"
 
 scripts/buildtest
 $PROG test/files/elf.64.le.exe

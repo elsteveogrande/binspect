@@ -19,13 +19,13 @@ for UNIT in error fd mmap ; do
   $PROG
 done
 
-# `test_binspect` tests everything, somewhat redundantly, but exercises
+# `TestBinary` tests everything, somewhat redundantly, but exercises
 # everything in one shot, including things the unit tests above miss, e.g.
 # setting up a `context` and running from within some application
 
 # Using clang with "standard" option set
-export PROG="${BUILD}/test"
-export TESTCC="test/test_binspect.cc"
+export PROG="${BUILD}/TestBinary"
+export TESTCC="test/TestBinary.cc"
 export COMP="llvm"
 export OPT="-Og -g"
 export FSAN=""
@@ -33,8 +33,8 @@ export FSAN=""
 ./scripts/runtests
 
 # ASAN + UBSAN, no optimizations
-export PROG="${BUILD}/test"
-export TESTCC="test/test_binspect.cc"
+export PROG="${BUILD}/TestBinary_san_o0"
+export TESTCC="test/TestBinary.cc"
 export COMP="llvm"
 export OPT="-O0 -g"
 export FSAN="-fsanitize=address,undefined"
@@ -43,8 +43,8 @@ export FSAN="-fsanitize=address,undefined"
 
 # ASAN + UBSAN, full optimizations + LTO
 # (unsure whether LTO affects much in a header-only lib though)
-export PROG="${BUILD}/test"
-export TESTCC="test/test_binspect.cc"
+export PROG="${BUILD}/TestBinary_san_o3lto"
+export TESTCC="test/TestBinary.cc"
 export COMP="llvm"
 export OPT="-O3 -flto -g"
 export FSAN="-fsanitize=address,undefined"
@@ -52,8 +52,8 @@ export FSAN="-fsanitize=address,undefined"
 ./scripts/runtests
 
 # GCC + libstdc++
-export PROG="${BUILD}/test"
-export TESTCC="test/test_binspect.cc"
+export PROG="${BUILD}/TestBinary_gcc"
+export TESTCC="test/TestBinary.cc"
 export OPT="-Os"
 export FSAN=""
 export COMP="gcc"
@@ -61,8 +61,8 @@ export COMP="gcc"
 ./scripts/runtests
 
 # Without exceptions and RTTI
-export PROG="${BUILD}/test"
-export TESTCC="test/test_binspect.cc"
+export PROG="${BUILD}/TestBinary_noexcrtti"
+export TESTCC="test/TestBinary.cc"
 export OPT="-Os -fno-exceptions -fno-rtti"
 export FSAN=""
 export COMP="llvm"

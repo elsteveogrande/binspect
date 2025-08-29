@@ -2,7 +2,6 @@
 
 #include <cassert>
 #include <functional>
-#include <ranges>
 #include <type_traits>
 
 namespace binspect {
@@ -12,8 +11,8 @@ struct context;
 // clang-format off
 template <class T>
 struct view : std::ranges::view_interface<view<T>> {
-  std::function<T(size_t)> at_ {};
-  std::function<size_t()> count_ {};
+  std::function<T const&(size_t)> at_;
+  std::function<size_t()> count_;
 
   static view empty() { return {.at_ = nullptr, .count_ = [] {return 0;}}; }
 
@@ -25,8 +24,8 @@ struct view : std::ranges::view_interface<view<T>> {
               && std::is_same_v<V const&, decltype(c.at(size_t{}))>; }
   static view<T> of(C const& c) {
     return {
-      .at_ = [&c] (size_t i) { return c.at[i]; },
-      .count_ = [&c] { return c.size(); }
+      .at_ = [&c] (size_t i) -> T const& { return c.at(i); },
+      .count_ = [&c] -> size_t { return c.size(); }
     };
   }
 
@@ -41,13 +40,13 @@ struct view : std::ranges::view_interface<view<T>> {
   };
 
   __rand_access<T> begin() const {
-    if (at_ && count_) { return __rand_access<T>{*this, 0}; }
-    assert (false && "cannot support iteration");
+    assert ((at_ && count_) && "cannot support iteration");
+    return __rand_access<T>{*this, 0};
   }
 
   __rand_access<T> end() const {
-    if (at_ && count_) { return __rand_access<T>{*this, count_()}; }
-    assert (false && "cannot support iteration");
+    assert ((at_ && count_) && "cannot support iteration");
+    return __rand_access<T>{*this, count_()};
   }
 
   size_t count() const { return count_(); }

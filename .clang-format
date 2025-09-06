@@ -53,10 +53,10 @@ RequiresClausePosition: WithFollowing
 PenaltyBreakBeforeFirstCallParameter: 600
 PenaltyBreakComment:                  100
 PenaltyBreakFirstLessLess:            300
-PenaltyBreakOpenParenthesis:          200
+PenaltyBreakOpenParenthesis:          400
 PenaltyBreakScopeResolution:          800
 PenaltyBreakString:                   999
-PenaltyBreakTemplateDeclaration:      700
+PenaltyBreakTemplateDeclaration:      999
 PenaltyExcessCharacter:               400
 PenaltyIndentedWhitespace:            700
 PenaltyReturnTypeOnItsOwnLine:        800

@@ -4,12 +4,12 @@
 #include <cassert>
 
 int main(int, char** argv) {
-  auto f = binspect::FD::open(argv[0]);
-  assert(f);
-  auto m = binspect::MMap::mapFile(std::move(*f));
-  assert(m);
-  assert(m->addr_);
-  auto* b = (uint8_t*) m->addr_;
+  binspect::FD f(argv[0]);
+  assert(f.ok());
+  binspect::MMap m(std::move(f));
+  assert(m.ok());
+  assert(m.data_);
+  auto* b = (uint8_t*) m.data_;
   assert(b);
   assert(*b);
   return 0;

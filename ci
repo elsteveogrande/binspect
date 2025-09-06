@@ -12,16 +12,15 @@ mkdir -p $BUILD
 
 # Individual unit tests
 
-for UNIT in error fd mmap ; do
-  export PROG="${BUILD}/test_${UNIT}"
-  export TESTCC="test/test_${UNIT}.cc"
+for UNIT in FD MMap Words ; do
+  export PROG="${BUILD}/Test${UNIT}"
+  export TESTCC="test/Test${UNIT}.cc"
   COMP=llvm FSAN="-fsanitize=address,undefined" OPT="-Og" ./scripts/buildtest
   $PROG
 done
 
 # `TestBinary` tests everything, somewhat redundantly, but exercises
-# everything in one shot, including things the unit tests above miss, e.g.
-# setting up a `context` and running from within some application
+# everything in one shot, including things the unit tests above might miss
 
 # Using clang with "standard" option set
 export PROG="${BUILD}/TestBinary"

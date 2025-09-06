@@ -9,6 +9,7 @@ static_assert(__cplusplus > 202300L, "binspect requires C++23");
 #include <cstdio>
 #include <cstring>
 #include <fcntl.h>
+#include <new>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/types.h>

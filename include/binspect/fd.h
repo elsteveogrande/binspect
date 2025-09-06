@@ -7,6 +7,7 @@ static_assert(__cplusplus > 202300L, "binspect requires C++23");
 #include <cstring>
 #include <fcntl.h>
 #include <new>
+#include <string_view>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -42,6 +43,12 @@ struct FD {
 
   explicit FD(char const* path) : FD(::open(path, O_RDONLY)) {
     if (!ok()) { errno_ = errno; }
+  }
+
+  explicit FD(std::string_view _path) {
+    char path[1024];
+    strncpy(path, _path.data(), std::min(_path.size(), sizeof(path)));
+    new (this) FD(path);
   }
 
   bool ok() const { return !(errno_ || fd_ < 0); }

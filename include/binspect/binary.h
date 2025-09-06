@@ -2,14 +2,13 @@
 static_assert(__cplusplus > 202300L, "binspect requires C++23");
 
 #include "binspect/BinaryBase.h"
-#include "binspect/ELF32.h"
-#include "binspect/ELF64.h"
 #include "binspect/MMap.h"
 #include "binspect/VBase.h"
+#include "binspect/detail/ELF.h"
 
 namespace binspect {
 
-struct Binary final : VBase<BinaryBase, /* vtable + 2 words */ 3 * sizeof(long)> {
+struct Binary final : VBase<BinaryBase, /* vtable + 1 word */ 3 * sizeof(long)> {
   using VB = VBase<BinaryBase, 3 * sizeof(long)>;
   using VB::VB;
   using VB::operator=;
@@ -21,17 +20,16 @@ struct Binary final : VBase<BinaryBase, /* vtable + 2 words */ 3 * sizeof(long)>
   explicit Binary(binspect::MMap&& mm) : owned_(std::move(mm)), mm_(owned_) { identify(); }
 
   void identify() {
-    if (!mm_.ok()) { return; }
-    void const* ptr = mm_.data_;
-    if (!ptr) { return; }
-    if (elf::ELF64LE::valid(ptr)) {
-      assign(elf::ELF64LE(ptr));
-    } else if (elf::ELF32LE::valid(ptr)) {
-      assign(elf::ELF32LE(ptr));
-    } else if (elf::ELF64BE::valid(ptr)) {
-      assign(elf::ELF64BE(ptr));
-    } else if (elf::ELF32BE::valid(ptr)) {
-      assign(elf::ELF32BE(ptr));
+    if (mm_.ok()) {
+      if (elf::ELF64LE::valid(mm_.data_)) {
+        assign(elf::ELF64LE(mm_.data_));
+      } else if (elf::ELF32LE::valid(mm_.data_)) {
+        assign(elf::ELF32LE(mm_.data_));
+      } else if (elf::ELF64BE::valid(mm_.data_)) {
+        assign(elf::ELF64BE(mm_.data_));
+      } else if (elf::ELF32BE::valid(mm_.data_)) {
+        assign(elf::ELF32BE(mm_.data_));
+      }
     }
   }
 

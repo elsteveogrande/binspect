@@ -1,35 +1,27 @@
 #pragma once
-#include <ranges>
 static_assert(__cplusplus > 202300L, "binspect requires C++23");
 
 #include <format>
-#include <print>
 #include <string_view>
 
 namespace binspect {
 
 struct Section final {
-  uintptr_t vm_addr;
-  std::string_view name;
-  std::byte const* content;
-  std::byte const* content_end;
+  uintptr_t const addr;
+  std::string_view const name;
+  std::byte const* const content;
+  std::byte const* const contentEnd;
 
-  size_t size() const { return size_t(content_end - content); }
-
-  // friend std::ostream& operator<<(std::ostream& os, Section const& self) {
-  //   auto* z = (void const*) &self;
-  //   std::print("\nz:{:p}\n", z);
-  //   auto a = self.vm_addr;
-  //   std::print("a:{:p}\n", (void const*) a);
-  //   auto b = self.content_end - self.content;
-  //   std::print("b:{}\n", b);
-  //   auto c = self.name;
-  //   std::print("c:{:p},{}\n", (void const*) c.data(), c.size());
-  //   std::print(os, "(section {:p} vm_addr:0x{:012x} size:{} name:{})", z, a,
-  //   b, c); return os;
-  // }
+  size_t size() const { return size_t(contentEnd - content); }
 };
 
-struct Sections final : std::ranges::view_interface<Section> {};
-
 }  // namespace binspect
+
+template <>
+struct std::formatter<binspect::Section> {
+  constexpr auto parse(auto& cx) { return cx.begin(); }
+  auto format(auto const& sec, auto& cx) const {
+    return std::format_to(
+        cx.out(), "(section addr:0x{:012x} size:{} name:{})", sec.addr, sec.size(), sec.name);
+  }
+};

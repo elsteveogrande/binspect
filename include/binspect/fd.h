@@ -1,77 +1,67 @@
 #pragma once
+static_assert(__cplusplus > 202300L, "binspect requires C++23");
 
-#include "binspect/error.h"
-#include "binspect/memory.h"
-
+#include <cassert>
+#include <cerrno>
 #include <cstddef>
 #include <cstring>
-#include <expected>
 #include <fcntl.h>
+#include <new>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <unistd.h>
+#include <utility>
 
 namespace binspect {
 
-namespace c {
-res<int> open(std::string_view path);
-res<off_t> lseek(int fileno, off_t offset, int whence);
-}  // namespace c
+struct FD {
+  int fd_ {};
+  int errno_ {};
 
-struct fd {
-  int fd_ {-1};
-  off_t size_ {-1};
-  operator bool() const { return fd_ > 0; }
-
-  fd(int fd, off_t size = -1) : fd_(fd), size_(size) {}
-  fd(fd const&) = delete;
-  fd& operator=(fd const&) = delete;
-  operator int() const { return fd_; }
-
-  fd(fd&& rhs) {
-    std::swap(fd_, rhs.fd_);
-    std::swap(size_, rhs.size_);
-  }
-
-  fd& operator=(fd&& rhs) {
-    return (std::addressof(rhs) == this) ? *this : *new (this) fd(std::move(rhs));
-  }
-
-  ~fd() {
-    if (fd_ > 0) {
+  ~FD() {
+    if (ok()) {
       ::close(fd_);
-      fd_ = -1;
+      clear();
     }
   }
 
-  res<size_t> size() const {
-    if (size_ > 0) { return size_t(size_); }
-    return error {.msg_ = "empty file"};
+  FD() = default;
+
+  FD(FD&& rhs) : fd_(rhs.fd_), errno_(rhs.errno_) { rhs.clear(); }
+
+  FD& operator=(FD&& rhs) {
+    if (&rhs != this) { new (this) FD(std::move(rhs)); }
+    return *this;
   }
 
-  static res<fd> open(std::string_view path) {
-    auto fileno = c::open(path);
-    if (!fileno) { return fileno.error(); }
-    auto size = c::lseek(*fileno, 0, SEEK_END);
-    if (!size) { return size.error(); }
-    return res<fd> {fileno.value(), *size};
+  FD(FD const&) = delete;
+  FD& operator=(FD const&) = delete;
+
+  explicit FD(int fd) : fd_(fd) {}
+
+  explicit FD(char const* path) : FD(::open(path, O_RDONLY)) {
+    if (!ok()) { errno_ = errno; }
+  }
+
+  bool ok() const { return !(errno_ || fd_ < 0); }
+
+  void clear() {
+    fd_ = 0;
+    errno_ = 0;
+  }
+
+  int operator*() const {
+    assert(ok());
+    return fd_;
+  }
+
+  struct stat stat() const {
+    struct stat ret;
+    memset(&ret, 0, sizeof(ret));
+    ::fstat(fd_, &ret);
+    return ret;
   }
 };
-
-namespace c {
-inline res<int> open(std::string_view path) {
-  constexpr static size_t kMaxPath = 1024;
-  char path_buf[kMaxPath + 1] {0};
-  strncpy(path_buf, path.data(), sizeof(path_buf));
-  int ret = ::open(path_buf, O_RDONLY);
-  if (ret == -1) { return error {.errno_ = errno, .msg_ = path}; }
-  return ret;
-}
-
-inline res<off_t> lseek(int fileno, off_t offset, int whence) {
-  auto ret = ::lseek(fileno, offset, whence);
-  if (ret == -1) { return error {.errno_ = errno, .msg_ = "could not lseek"}; }
-  return ret;
-}
-
-}  // namespace c
 
 }  // namespace binspect

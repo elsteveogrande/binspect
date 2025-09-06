@@ -1,15 +1,16 @@
 #pragma once
+static_assert(__cplusplus > 202300L, "binspect requires C++23");
 
 #include <format>
 #include <optional>
-#include <ostream>
 #include <print>
 #include <string_view>
+#include <utility>
 
 namespace binspect {
 
-struct symbol final {
-  enum class flag : uint32_t {
+struct Symbol final {
+  enum class Flag : uint32_t {
     global = 1u << 31,
     local = 1u << 30,
     weak = 1u << 29,
@@ -26,31 +27,33 @@ struct symbol final {
   uint32_t flags;
   std::optional<size_t> size {};
 
-  friend std::ostream& operator<<(std::ostream& os, symbol const& self) {
-    std::print(
-        os,
-        "(symbol value:0x{:012x} flags:0x{:08x} size:{} name:{})",
-        self.value,
-        self.flags,
-        self.size.value_or(-1),
-        self.name);
-    return os;
-  }
+  // friend std::ostream& operator<<(std::ostream& os, Symbol const& self) {
+  //   std::print(
+  //       os,
+  //       "(symbol value:0x{:012x} flags:0x{:08x} size:{} name:{})",
+  //       self.value,
+  //       self.flags,
+  //       self.size.value_or(-1),
+  //       self.name);
+  //   return os;
+  // }
 };
+
+struct Symbols final : std::ranges::view_interface<Symbol> {};
 
 }  // namespace binspect
 
 template <>
-struct std::formatter<binspect::symbol::flag> {
-  auto format(binspect::symbol::flag f, format_context&) const {
+struct std::formatter<binspect::Symbol::Flag> {
+  auto format(binspect::Symbol::Flag f, std::format_context&) const {
     switch (f) {
-    case binspect::symbol::flag::local:
-    case binspect::symbol::flag::global:
-    case binspect::symbol::flag::weak:
-    case binspect::symbol::flag::data:
-    case binspect::symbol::flag::code:
-    case binspect::symbol::flag::other:
-    default:                             return "?";
+    case binspect::Symbol::Flag::local:  return "local";
+    case binspect::Symbol::Flag::global: return "global";
+    case binspect::Symbol::Flag::weak:   return "weak";
+    case binspect::Symbol::Flag::data:   return "data";
+    case binspect::Symbol::Flag::code:   return "code";
+    case binspect::Symbol::Flag::other:  return "other";
+    default:                             std::unreachable();
     }
   }
 };

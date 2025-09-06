@@ -1,16 +1,15 @@
-#include "binspect/context.h"
-#include "binspect/fd.h"
-#include "binspect/mmap.h"
+#include "binspect/Binary.h"
+#include "binspect/FD.h"
+#include "binspect/MMap.h"
 
 #include <cassert>
 #include <iostream>
 #include <string_view>
 
 void test(std::string_view path) {
-  binspect::context cx;
-  auto fd = binspect::fd::open(path);
-  auto mm = binspect::mmap::map_file(std::move(fd));
-  auto bin = cx.binary_at(mm->addr_);
+  auto fd = binspect::FD::open(path);
+  auto mm = binspect::MMap::mapFile(std::move(fd));
+  auto bin = binspect::Binary::at(mm->addr_);
   assert(bin);
 
   std::cout << *bin << '\n';

@@ -6,7 +6,6 @@
 -Wextra
 -Wpedantic
 -Wconversion
--Wreturn-stack-address
 -Wdeprecated-copy-dtor
 -Werror
 -UNDEBUG

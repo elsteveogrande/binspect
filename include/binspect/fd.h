@@ -47,7 +47,7 @@ struct FD {
 
   explicit FD(std::string_view _path) {
     char path[1024];
-    strncpy(path, _path.data(), std::min(_path.size(), sizeof(path)));
+    strncpy(path, _path.data(), sizeof(path));
     new (this) FD(path);
   }
 

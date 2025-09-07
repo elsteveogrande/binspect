@@ -3,15 +3,17 @@
 #include "binspect/MMap.h"
 
 #include <cassert>
+#include <iostream>
 #include <print>
 #include <string_view>
 
 void test(std::string_view path) {
   binspect::FD fd(path);
+  if (!fd.ok()) { std::cerr << strerror(fd.errno_) << '\n'; }
   binspect::MMap mm(std::move(fd));
   binspect::Binary bin(std::move(mm));
   assert(bin.ok());
-  for (auto sec : bin.sections()) { std::print("{}\n", sec); }
+  for (auto sec : bin->sections()) { std::print("{}\n", sec); }
   // for (auto sym : bin->symbols()) { std::print("{}\n", sym); }
 }
 

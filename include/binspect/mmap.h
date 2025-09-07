@@ -31,7 +31,7 @@ struct MMap {
       , data_(rhs.data_)
       , size_(rhs.size_)
       , errno_(rhs.errno_) {
-    clear();
+    rhs.clear();
   }
 
   MMap& operator=(MMap&& rhs) {

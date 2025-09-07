@@ -7,10 +7,10 @@ static_assert(__cplusplus > 202300L, "binspect requires C++23");
 namespace binspect {
 
 struct Section final {
-  uintptr_t const addr;
-  std::string_view const name;
-  std::byte const* const content;
-  std::byte const* const contentEnd;
+  uintptr_t addr;
+  std::string_view name;
+  std::byte const* content;
+  std::byte const* contentEnd;
 
   size_t size() const { return size_t(contentEnd - content); }
 };

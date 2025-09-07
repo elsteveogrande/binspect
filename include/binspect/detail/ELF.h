@@ -74,26 +74,26 @@ struct ELF : BinaryBase {
   //           reinterpret_cast<char const*>(symNames.contentEnd)};
   // }
 
-  std::string_view secNames() const {
-    auto secNames = section(shstrIndex_);
-    return {reinterpret_cast<char const*>(secNames.content),
-            reinterpret_cast<char const*>(secNames.contentEnd)};
-  }
-
-  // E::U32 name_index;  // Section name (index into .shstrtab)
-  // E::U32 type;        // Section type
-  // ELong flags;        // Section flags
-  // ELong addr;         // Section virtual addr at execution
-  // ELong offset;       // Section file offset
-  // ELong size;         // Section size in bytes
-  // E::U32 link;        // Link to another section
-  // E::U32 info;        // Additional section information
-  // ELong addralign;    // Section alignment
-  // ELong entsize;      // Entry size if section holds table
-  Section convert(auto const& sec) const;
+  virtual void const* base() const = 0;
 
   // std::span<ELFSec> secs() const {}
-  // Section convert(ELFSec const& sec) const {}
+
+  std::string_view secNames(this auto const& self) {
+    auto sec = self.secs()[self.shstrIndex_];
+    auto* content = reinterpret_cast<char const*>(uintptr_t(self.base()) + sec.offset);
+    return {content, sec.size};
+  }
+
+  Section convert(this auto const& self, auto const& sec) {
+    auto* content = (std::byte*) (uintptr_t(self.base()) + sec.offset);
+    return {
+        .addr = sec.addr,
+        .name = self.secNames().data() + sec.name_index,
+        .content = content,
+        .contentEnd = content + sec.size,
+    };
+  }
+
   Gen<Section> genSections(this auto& self) {
     for (auto& sec : self.secs()) { co_yield self.convert(sec); }
   }
@@ -109,9 +109,9 @@ struct ELF64 : ELF {
   static_assert(sizeof(ELFSym) == 24);
 
   Header const* header_;
-
-  explicit ELF64(Header const* header) : ELF {header->shstrndx} {};
-  explicit ELF64(void const* ptr) : ELF64(reinterpret_cast<Header const*>(ptr)) {}
+  explicit ELF64(Header const* header) : ELF {header->shstrndx}, header_ {header} {}
+  explicit ELF64(void const* ptr) : ELF64 {reinterpret_cast<Header const*>(ptr)} {}
+  void const* base() const override { return header_; }
 };
 
 struct ELF64LE final : ELF64<LE> {
@@ -123,7 +123,11 @@ struct ELF64LE final : ELF64<LE> {
            && h.klass == 2 && h.endian == 1 && h.elfversion == 1 && h.version == 1;
   }
 
-  std::span<ELFSec> secs() const {}
+  std::span<ELFSec> secs() const {
+    auto addr = uintptr_t(base()) + header_->shoff;
+    assert(sizeof(ELFSec) == header_->shentsize);
+    return std::span<ELFSec>(reinterpret_cast<ELFSec*>(addr), size_t(header_->shnum));
+  }
 
   Section section(uint16_t i) const override { return convert(secs()[i]); }
   Gen<Section> sections() const override { return genSections(); }
@@ -138,7 +142,7 @@ struct ELF64BE final : ELF64<BE> {
            && h.klass == 2 && h.endian == 2 && h.elfversion == 1 && h.version == 1;
   }
 
-  std::span<ELFSec> secs() const {}
+  std::span<ELFSec> secs() const { return std::span<ELFSec>(); }
 
   Section section(uint16_t i) const override { return convert(secs()[i]); }
   Gen<Section> sections() const override { return genSections(); }
@@ -154,7 +158,9 @@ struct ELF32 : ELF {
   static_assert(sizeof(ELFSym) == 16);
 
   Header const* header_;
-  explicit ELF32(void const* ptr) : header_(reinterpret_cast<Header const*>(ptr)) {}
+  explicit ELF32(Header const* header) : ELF {header->shstrndx}, header_ {header} {}
+  explicit ELF32(void const* ptr) : ELF32 {reinterpret_cast<Header const*>(ptr)} {}
+  void const* base() const override { return header_; }
 };
 
 struct ELF32LE final : ELF32<LE> {
@@ -163,10 +169,10 @@ struct ELF32LE final : ELF32<LE> {
   static bool valid(void const* ptr) {
     auto& h = *reinterpret_cast<ELF32<LE>::Header const*>(ptr);
     return h.magic == 0x464c457f  // LE 32-bit read of bytes (7F 45 4C 46)
-           && h.klass == 2 && h.endian == 1 && h.elfversion == 1 && h.version == 1;
+           && h.klass == 1 && h.endian == 1 && h.elfversion == 1 && h.version == 1;
   }
 
-  std::span<ELFSec> secs() const {}
+  std::span<ELFSec> secs() const { return std::span<ELFSec>(); }
 
   Section section(uint16_t i) const override { return convert(secs()[i]); }
   Gen<Section> sections() const override { return genSections(); }
@@ -178,10 +184,10 @@ struct ELF32BE final : ELF32<BE> {
   static bool valid(void const* ptr) {
     auto& h = *reinterpret_cast<ELF32<BE>::Header const*>(ptr);
     return h.magic == 0x7f454c46  // BE 32-bit read of bytes (7F 45 4C 46)
-           && h.klass == 2 && h.endian == 2 && h.elfversion == 1 && h.version == 1;
+           && h.klass == 1 && h.endian == 2 && h.elfversion == 1 && h.version == 1;
   }
 
-  std::span<ELFSec> secs() const {}
+  std::span<ELFSec> secs() const { return std::span<ELFSec>(); }
 
   Section section(uint16_t i) const override { return convert(secs()[i]); }
   Gen<Section> sections() const override { return genSections(); }

@@ -13,7 +13,7 @@ static_assert(__cplusplus > 202300L, "binspect requires C++23");
 namespace binspect::elf {
 
 template <class E, class ELong>
-struct Header {
+struct HeaderBase {
   E::U32 magic;        // (7F 45 4C 46)
   uint8_t klass;       // (01) 32-bit, (02) 64-bit
   uint8_t endian;      // (01) LE, (02) BE; officially called `EI_DATA`
@@ -37,7 +37,7 @@ struct Header {
 };
 
 template <class E, class ELong>
-struct ELFSec {
+struct ELFSecBase {
   E::U32 name_index;  // Section name (index into .shstrtab)
   E::U32 type;        // Section type
   ELong flags;        // Section flags
@@ -51,7 +51,7 @@ struct ELFSec {
 };
 
 template <class E, class ELong>
-struct ELFSym {
+struct ELFSymBase {
   E::U32 name_index;  // Section name (index into .strtab)
   uint8_t info;       // Symbol type and binding
   uint8_t other;      // Symbol visibility
@@ -101,9 +101,9 @@ struct ELF : BinaryBase {
 
 template <Endian E>
 struct ELF64 : ELF {
-  using Header = Header<E, typename E::U64>;
-  using ELFSec = ELFSec<E, typename E::U64>;
-  using ELFSym = ELFSym<E, typename E::U64>;
+  using Header = HeaderBase<E, typename E::U64>;
+  using ELFSec = ELFSecBase<E, typename E::U64>;
+  using ELFSym = ELFSymBase<E, typename E::U64>;
   static_assert(sizeof(Header) == 64);
   static_assert(sizeof(ELFSec) == 64);
   static_assert(sizeof(ELFSym) == 24);
@@ -150,9 +150,9 @@ struct ELF64BE final : ELF64<BE> {
 
 template <Endian E>
 struct ELF32 : ELF {
-  using Header = Header<E, typename E::U32>;
-  using ELFSec = ELFSec<E, typename E::U32>;
-  using ELFSym = ELFSym<E, typename E::U32>;
+  using Header = HeaderBase<E, typename E::U32>;
+  using ELFSec = ELFSecBase<E, typename E::U32>;
+  using ELFSym = ELFSymBase<E, typename E::U32>;
   static_assert(sizeof(Header) == 52);
   static_assert(sizeof(ELFSec) == 40);
   static_assert(sizeof(ELFSym) == 16);

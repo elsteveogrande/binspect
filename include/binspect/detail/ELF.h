@@ -3,7 +3,7 @@ static_assert(__cplusplus > 202300L, "binspect requires C++23");
 
 #include "binspect/BinaryBase.h"
 #include "binspect/Section.h"
-// #include "binspect/Symbol.h"
+#include "binspect/Symbol.h"
 #include "binspect/Words.h"
 
 #include <cstdint>
@@ -36,10 +36,32 @@ struct HeaderBase {
   E::U16 shstrndx;     // Section header string table index
 };
 
+enum class ELFSecType : uint32_t {
+  k_null = 0,
+  k_progbits,
+  k_symtab,
+  k_strtab,
+  k_rela,
+  k_hash,
+  k_dynamic,
+  k_note,
+  k_nobits,
+  k_rel,
+  k_shlib,
+  k_dynsym,
+  k_0c,
+  k_0d,
+  k_initarray,
+  k_finiarray,
+  k_preinitarray,
+  k_group,
+  k_symtab_shndx
+};
+
 template <class E, class ELong>
 struct ELFSecBase {
   E::U32 name_index;  // Section name (index into .shstrtab)
-  E::U32 type;        // Section type
+  E::U32 type_;       // Section type
   ELong flags;        // Section flags
   ELong addr;         // Section virtual addr at execution
   ELong offset;       // Section file offset
@@ -48,6 +70,8 @@ struct ELFSecBase {
   E::U32 info;        // Additional section information
   ELong addralign;    // Section alignment
   ELong entsize;      // Entry size if section holds table
+
+  ELFSecType type() const { return ELFSecType(unsigned(type_)); }
 };
 
 template <class E, class ELong>
@@ -55,28 +79,19 @@ struct ELFSymBase {
   E::U32 name_index;  // Section name (index into .strtab)
   uint8_t info;       // Symbol type and binding
   uint8_t other;      // Symbol visibility
-  E::U16 shndx;       // Section index [not reliable; ignore]
+  E::U16 shndx;       // Section index
   ELong value;        // Symbol value
   ELong size;         // Symbol size
 };
 
 struct ELF : BinaryBase {
   uint16_t const shstrIndex_ {};
+  uint16_t mutable symtabIndex_ {};
+  uint16_t mutable strtabIndex_ {};
 
-  explicit ELF(uint16_t shstrIndex) : shstrIndex_(shstrIndex) {}
+  ELF(uint16_t shstrIndex) : shstrIndex_(shstrIndex) {}
 
-  // int16_t mutable symtabIndex_ {};
-  // int16_t mutable strtabIndex_ {};
-
-  // std::string_view symNames() const {
-  //   auto symNames = sections()[*index];
-  //   return {reinterpret_cast<char const*>(symNames.content),
-  //           reinterpret_cast<char const*>(symNames.contentEnd)};
-  // }
-
-  virtual void const* base() const = 0;
-
-  // std::span<ELFSec> secs() const {}
+  virtual std::byte const* base() const = 0;
 
   std::string_view secNames(this auto const& self) {
     auto sec = self.secs()[self.shstrIndex_];
@@ -84,18 +99,96 @@ struct ELF : BinaryBase {
     return {content, sec.size};
   }
 
-  Section convert(this auto const& self, auto const& sec) {
-    auto* content = (std::byte*) (uintptr_t(self.base()) + sec.offset);
+  std::string_view secName(this auto const& self, size_t i) {
+    auto* data = self.secNames().data();
+    auto sec = self.secs()[i];
+    auto idx = sec.name_index;
+    auto* ret = data + idx;
+    return {ret};
+  }
+
+  bool findSymSections(this auto const& self) {
+    if (self.symtabIndex_ && self.strtabIndex_) { return true; }
+    uint16_t i = 0;
+    for (auto& sec : self.secs()) {
+      if (!self.symtabIndex_ && sec.type() == ELFSecType::k_symtab &&
+          self.secName(i) == ".symtab") {
+        self.symtabIndex_ = i;
+      }
+      if (!self.strtabIndex_ && sec.type() == ELFSecType::k_strtab &&
+          self.secName(i) == ".strtab") {
+        self.strtabIndex_ = i;
+      }
+      if (self.symtabIndex_ && self.strtabIndex_) { break; }
+      ++i;
+    }
+    return self.symtabIndex_ && self.strtabIndex_;
+  }
+
+  std::string_view symNames(this auto const& self) {
+    if (!self.symtabIndex_ || !self.strtabIndex_) { self.findSymSections(); }
+    if (!self.symtabIndex_ || !self.strtabIndex_) { return ""; }
+    auto sec = self.secs()[self.strtabIndex_];
+    auto* content = reinterpret_cast<char const*>(uintptr_t(self.base()) + sec.offset);
+    return {content, sec.size};
+  }
+
+  Section convertSec(this auto const& self, auto const& sec) {
+    auto* names = self.secNames().data();
+    auto* content = reinterpret_cast<std::byte*>(uintptr_t(self.base()) + sec.offset);
     return {
         .addr = sec.addr,
-        .name = self.secNames().data() + sec.name_index,
+        .name = names + sec.name_index,
         .content = content,
         .contentEnd = content + sec.size,
     };
   }
 
+  static Symbol::Binding _binding(uint8_t info) {
+    switch (info >> 4) {
+    case 0: return Symbol::Binding::LOCAL;
+    case 1: return Symbol::Binding::GLOBAL;
+    case 2: return Symbol::Binding::WEAK;
+    }
+    return Symbol::Binding::OTHER;
+  }
+
+  static Symbol::Type _type(uint8_t info) {
+    switch (info & 0x0f) {
+    case 1: return Symbol::Type::DATA;
+    case 2: return Symbol::Type::CODE;
+    case 3: return Symbol::Type::SECTION;
+    case 4: return Symbol::Type::FILE;
+    }
+    return Symbol::Type::OTHER;
+  }
+
+  static Symbol::Visibility _visibility(uint8_t other) {
+    switch (other) {
+    case 0: return Symbol::Visibility::DEFAULT;
+    case 2: return Symbol::Visibility::HIDDEN;
+    case 3: return Symbol::Visibility::PROTECTED;
+    }
+    return Symbol::Visibility::OTHER;
+  }
+
+  Symbol convertSym(this auto const& self, auto const& sym) {
+    return {
+        .value = sym.value,
+        .name = self.symNames().data() + sym.name_index,
+        .binding = _binding(sym.info),
+        .type = _type(sym.info),
+        .visibility = _visibility(sym.other),
+        .size = sym.size,
+    };
+  }
+
   Gen<Section> genSections(this auto& self) {
-    for (auto& sec : self.secs()) { co_yield self.convert(sec); }
+    for (auto& sec : self.secs()) { co_yield self.convertSec(sec); }
+  }
+
+  Gen<Symbol> genSymbols(this auto& self) {
+    for (auto& sym : self.syms()) { co_yield self.convertSym(sym); }
   }
 };
 
@@ -111,7 +204,7 @@ struct ELF64 : ELF {
   Header const* header_;
   explicit ELF64(Header const* header) : ELF {header->shstrndx}, header_ {header} {}
   explicit ELF64(void const* ptr) : ELF64 {reinterpret_cast<Header const*>(ptr)} {}
-  void const* base() const override { return header_; }
+  std::byte const* base() const override { return reinterpret_cast<std::byte const*>(header_); }
 };
 
 struct ELF64LE final : ELF64<LE> {
@@ -129,8 +222,18 @@ struct ELF64LE final : ELF64<LE> {
     return std::span<ELFSec>(reinterpret_cast<ELFSec*>(addr), size_t(header_->shnum));
   }
 
-  Section section(uint16_t i) const override { return convert(secs()[i]); }
+  std::span<ELFSym> syms(this auto const& self) {
+    if (!self.findSymSections()) { return {}; }
+    auto sec = self.section(self.symtabIndex_);
+    auto* begin = reinterpret_cast<ELFSym const*>(sec.content);
+    auto* end = reinterpret_cast<ELFSym const*>(sec.contentEnd);
+    return {const_cast<ELFSym*>(begin), end};
+  }
+
+  Section section(uint16_t i) const override { return convertSec(secs()[i]); }
   Gen<Section> sections() const override { return genSections(); }
+
+  Gen<Symbol> symbols() const override { return genSymbols(); }
 };
 
 struct ELF64BE final : ELF64<BE> {
@@ -142,10 +245,24 @@ struct ELF64BE final : ELF64<BE> {
            && h.klass == 2 && h.endian == 2 && h.elfversion == 1 && h.version == 1;
   }
 
-  std::span<ELFSec> secs() const { return std::span<ELFSec>(); }
+  std::span<ELFSec> secs() const {
+    auto addr = uintptr_t(base()) + header_->shoff;
+    assert(sizeof(ELFSec) == header_->shentsize);
+    return std::span<ELFSec>(reinterpret_cast<ELFSec*>(addr), size_t(header_->shnum));
+  }
 
-  Section section(uint16_t i) const override { return convert(secs()[i]); }
+  std::span<ELFSym> syms(this auto const& self) {
+    if (!self.findSymSections()) { return {}; }
+    auto sec = self.section(self.symtabIndex_);
+    auto* begin = reinterpret_cast<ELFSym const*>(sec.content);
+    auto* end = reinterpret_cast<ELFSym const*>(sec.contentEnd);
+    return {const_cast<ELFSym*>(begin), end};
+  }
+
+  Section section(uint16_t i) const override { return convertSec(secs()[i]); }
   Gen<Section> sections() const override { return genSections(); }
+
+  Gen<Symbol> symbols() const override { return genSymbols(); }
 };
 
 template <Endian E>
@@ -159,8 +276,9 @@ struct ELF32 : ELF {
 
   Header const* header_;
   explicit ELF32(Header const* header) : ELF {header->shstrndx}, header_ {header} {}
+
   explicit ELF32(void const* ptr) : ELF32 {reinterpret_cast<Header const*>(ptr)} {}
-  void const* base() const override { return header_; }
+  std::byte const* base() const override { return reinterpret_cast<std::byte const*>(header_); }
 };
 
 struct ELF32LE final : ELF32<LE> {
@@ -172,10 +290,24 @@ struct ELF32LE final : ELF32<LE> {
            && h.klass == 1 && h.endian == 1 && h.elfversion == 1 && h.version == 1;
   }
 
-  std::span<ELFSec> secs() const { return std::span<ELFSec>(); }
+  std::span<ELFSec> secs() const {
+    auto addr = uintptr_t(base()) + header_->shoff;
+    assert(sizeof(ELFSec) == header_->shentsize);
+    return std::span<ELFSec>(reinterpret_cast<ELFSec*>(addr), size_t(header_->shnum));
+  }
 
-  Section section(uint16_t i) const override { return convert(secs()[i]); }
+  std::span<ELFSym> syms(this auto const& self) {
+    if (!self.findSymSections()) { return {}; }
+    auto sec = self.section(self.symtabIndex_);
+    auto* begin = reinterpret_cast<ELFSym const*>(sec.content);
+    auto* end = reinterpret_cast<ELFSym const*>(sec.contentEnd);
+    return {const_cast<ELFSym*>(begin), end};
+  }
+
+  Section section(uint16_t i) const override { return convertSec(secs()[i]); }
   Gen<Section> sections() const override { return genSections(); }
+
+  Gen<Symbol> symbols() const override { return genSymbols(); }
 };
 
 struct ELF32BE final : ELF32<BE> {
@@ -187,121 +319,24 @@ struct ELF32BE final : ELF32<BE> {
            && h.klass == 1 && h.endian == 2 && h.elfversion == 1 && h.version == 1;
   }
 
-  std::span<ELFSec> secs() const { return std::span<ELFSec>(); }
+  std::span<ELFSec> secs() const {
+    auto addr = uintptr_t(base()) + header_->shoff;
+    assert(sizeof(ELFSec) == header_->shentsize);
+    return std::span<ELFSec>(reinterpret_cast<ELFSec*>(addr), size_t(header_->shnum));
+  }
 
-  Section section(uint16_t i) const override { return convert(secs()[i]); }
+  std::span<ELFSym> syms(this auto const& self) {
+    if (!self.findSymSections()) { return {}; }
+    auto sec = self.section(self.symtabIndex_);
+    auto* begin = reinterpret_cast<ELFSym const*>(sec.content);
+    auto* end = reinterpret_cast<ELFSym const*>(sec.contentEnd);
+    return {const_cast<ELFSym*>(begin), end};
+  }
+
+  Section section(uint16_t i) const override { return convertSec(secs()[i]); }
   Gen<Section> sections() const override { return genSections(); }
+
+  Gen<Symbol> symbols() const override { return genSymbols(); }
 };
 
 }  // namespace binspect::elf
-
-// // Model classes for ELF structures.
-// // These support 64- and 32-bit layouts,
-// // either little- or big- endian.
-
-// template <class E, class Sec, class Sym>
-// struct ELFBase {
-
-//   template <typename T = std::byte>
-//   T const*
-//   ptr(this E const& self,
-//       size_t offset = 0,
-//       size_t item_index = 0,
-//       size_t item_size = sizeof(T)) {
-//     return (T const*) (uintptr_t(&self) + offset + (item_size * item_index));
-//   }
-
-//   auto const* section_header_at(this E const& self, size_t i) {
-//     return self.template ptr<Sec>(self.shoff, i, self.shentsize);
-//   }
-
-//   char const* string_table(this E const& self, size_t i) {
-//     return self.template ptr<char>(self.section_header_at(i)->offset);
-//   }
-
-//   Sections sections_view(this E const& self) {
-//     return {
-//         .at_ = [&self](size_t i) -> Section {
-//           std::print("@@@ i: {}\n", i);
-//           return self.section_at(i);
-//         },
-//         .count_ = [&self]() -> size_t { return self.shnum; }};
-//   }
-
-//   Section section_at(this E const& self, size_t i) {
-//     auto shdr = self.section_header_at(i);
-//     auto strs = self.string_table(self.shstrndx);
-//     auto* name_chars = strs + shdr->name_index;
-//     std::print(
-//         "@@@ section_at i={} name={} idx={}\n",
-//         i,
-//         name_chars,
-//         size_t(shdr->name_index));
-//     return {
-//         .addr = shdr->addr,
-//         .name = {name_chars, strlen(name_chars)},
-//         .content = self.ptr(shdr->offset),
-//         .content_end = self.ptr(shdr->offset, shdr->size),
-//     };
-//   }
-
-//   std::optional<Section> find_section(this E const& self, std::string_view
-//   name) {
-//     for (auto sec : self.sections_view()) {
-//       if (sec.name == name) { return sec; }
-//     }
-//     return {};
-//   }
-
-//   Symbol __symbol(Sym const* sym, char const* names) const {
-//     auto* name_chars = names + sym->name_index;
-//     uint32_t flags = 0;
-//     switch ((sym->info >> 4) & 0x0f) {
-//     case 0:  flags |= uint32_t(Symbol::Flag::local); break;
-//     case 1:  flags |= uint32_t(Symbol::Flag::global); break;
-//     case 2:  flags |= uint32_t(Symbol::Flag::weak); break;
-//     default: break;
-//     }
-//     switch (sym->info & 0x0f) {
-//     case 1:  flags |= uint32_t(Symbol::Flag::data); break;
-//     case 2:  flags |= uint32_t(Symbol::Flag::code); break;
-//     default: flags |= uint32_t(Symbol::Flag::other); break;
-//     }
-//     return {
-//         .value = sym->value,
-//         .name = std::string_view(name_chars, strlen(name_chars)),
-//         .flags = flags,
-//         .size = sym->size};
-//   }
-
-//   Symbols symbols_view(this E const& self) {
-//     Section symtab;
-//     Section strtab;
-//     for (auto sec : self.sections_view()) {
-//       if (symtab.name.empty() && sec.name == ".symtab") {
-//         symtab = Section(std::move(sec));
-//       }
-//       if (strtab.name.empty() && sec.name == ".strtab") {
-//         strtab = Section(std::move(sec));
-//       }
-//       if (symtab.name.size() && strtab.name.size()) {
-//         auto const* syms = (Sym*) (symtab.content);
-//         auto const size = symtab.size();
-//         if (!(size % sizeof(Sym))) {
-//           auto count = size / sizeof(Sym);
-//           auto* names = (char const*) (strtab.content);
-//           return {
-//               .at_ =
-//                   [=, &self](size_t i) { return self.__symbol(syms + i,
-//                   names); },
-//               .count_ = [=] { return count; }};
-//         }
-//       }
-//     }
-//     return {};
-//   }
-// };
-
-// }  // namespace elf
-
-// }  // namespace binspect

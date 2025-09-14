@@ -19,8 +19,27 @@ for UNIT in FD MMap Words ; do
   $PROG
 done
 
-# `TestBinary` tests everything, somewhat redundantly, but exercises
-# everything in one shot, including things the unit tests above might miss
+# `TestBinary` tests everything in one go
+
+# TODO: should actually verify symbol names and addresses:
+# ~/code/binspect$ for X in test/files/elf*exe ; do for S in $(nm $X | grep ' [TD] ' | sed 's/ [TD] /:/') ; do echo $X $S | tr : ' ' ; done; done
+# test/files/elf.32.be.exe 0001020c _start
+# test/files/elf.32.be.exe 00010214 main
+# test/files/elf.32.le.exe 000011f4 _start
+# test/files/elf.32.le.exe 000011f8 main
+# test/files/elf.64.be.exe 0000000000030488 _start
+# test/files/elf.64.be.exe 00000000000304a0 main
+# test/files/elf.64.le.exe 00000000000012f4 _start
+# test/files/elf.64.le.exe 00000000000012fa main
+
+# GCC + libstdc++
+export PROG="${BUILD}/TestBinary_gcc"
+export TESTCC="test/TestBinary.cc"
+export OPT="-Os"
+export FSAN=""
+export COMP="gcc"
+./scripts/buildtest
+./scripts/runtests
 
 # Using clang with "standard" option set
 export PROG="${BUILD}/TestBinary"
@@ -47,15 +66,6 @@ export TESTCC="test/TestBinary.cc"
 export COMP="llvm"
 export OPT="-O3 -flto -g"
 export FSAN="-fsanitize=address,undefined"
-./scripts/buildtest
-./scripts/runtests
-
-# GCC + libstdc++
-export PROG="${BUILD}/TestBinary_gcc"
-export TESTCC="test/TestBinary.cc"
-export OPT="-Os"
-export FSAN=""
-export COMP="gcc"
 ./scripts/buildtest
 ./scripts/runtests
 

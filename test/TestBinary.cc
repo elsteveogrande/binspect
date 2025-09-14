@@ -14,7 +14,7 @@ void test(std::string_view path) {
   binspect::Binary bin(std::move(mm));
   assert(bin.ok());
   for (auto sec : bin->sections()) { std::print("{}\n", sec); }
-  // for (auto sym : bin->symbols()) { std::print("{}\n", sym); }
+  for (auto sym : bin->symbols()) { std::print("{}\n", sym); }
 }
 
 int main(int argc, char** argv) {
